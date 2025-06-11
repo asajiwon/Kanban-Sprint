@@ -1,0 +1,2898 @@
+    <!-- 확인 모달 -->
+    <div id="confirm-modal" class="detail-modal">
+        <div class="detail-content" style="max-width: 400px;">
+            <div class="detail-header">
+                <div class="detail-title">🗑️ 프로젝트 삭제</div>
+            </div>
+            <div style="padding: 20px 0; text-align: center;">
+                <div id="confirm-message" style="font-size: 16px; color: #1e293b; margin-bottom: 20px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-cancel" style="flex: 1;" onclick="cancelDelete()">취소</button>
+                    <button class="btn" style="flex: 1; background: linear-gradient(135deg, #dc2626, #b91c1c);" onclick="confirmDelete()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let projects = [
+            { 
+                id: 1, 
+                title: "웹사이트 리뉴얼", 
+                status: "in-progress", 
+                progress: 70, 
+                startDate: "2024-03-15", 
+                dueDate: "2024-05-20",
+                tasks: [
+                    { id: 1, text: "디자인 시안 작성", completed: true },
+                    { id: 2, text: "프론트엔드 개발", completed: true },
+                    { id: 3, text: "백엔드 API 연동", completed: true },
+                    { id: 4, text: "테스트 및 배포", completed: false }
+                ]
+            },
+            { 
+                id: 2, 
+                title: "모바일 앱 개발", 
+                status: "not-started", 
+                progress: 0, 
+                startDate: "2024-06-01", 
+                dueDate: "2024-08-15",
+                tasks: [
+                    { id: 1, text: "요구사항 분석", completed: false },
+                    { id: 2, text: "UI/UX 디자인", completed: false },
+                    { id: 3, text: "개발 및 테스트", completed: false }
+                ]
+            },
+            { 
+                id: 3, 
+                title: "데이터베이스 최적화", 
+                status: "done", 
+                progress: 100, 
+                startDate: "2024-03-01", 
+                dueDate: "2024-04-15",
+                tasks: [
+                    { id: 1, text: "성능 분석", completed: true },
+                    { id: 2, text: "쿼리 최적화", completed: true },
+                    { id: 3, text: "인덱스 재구성", completed: true },
+                    { id: 4, text: "결과 검증", completed: true }
+                ]
+            },
+            { 
+                id: 4, 
+                title: "마케팅 캠페인", 
+                status: "in-progress", 
+                progress: 40, 
+                startDate: "2024-04-01", 
+                dueDate: "2024-07-31",
+                tasks: [
+                    { id: 1, text: "타겟 고객 분석", completed: true },
+                    { id: 2, text: "콘텐츠 제작", completed: true },
+                    { id: 3, text: "광고 집행", completed: false },
+                    { id: 4, text: "성과 측정", completed: false },
+                    { id: 5, text: "결과 보고서", completed: false }
+                ]
+            },
+            { 
+                id: 5, 
+                title: "API 개발", 
+                status: "done", 
+                progress: 100, 
+                startDate: "2024-03-10", 
+                dueDate: "2024-04-30",
+                tasks: [
+                    { id: 1, text: "API 설계", completed: true },
+                    { id: 2, text: "개발", completed: true },
+                    { id: 3, text: "테스트", completed: true }
+                ]
+            },
+            { 
+                id: 6, 
+                title: "보안 강화", 
+                status: "in-progress", 
+                progress: 60, 
+                startDate: "2024-05-01", 
+                dueDate: "2024-06-30",
+                tasks: [
+                    { id: 1, text: "보안 감사", completed: true },
+                    { id: 2, text: "취약점 수정", completed: false }
+                ]
+            }
+        ];
+        let nextId = 7;
+        let currentDetailProject = null;
+
+        // 기본 함수들
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('expanded');
+        }
+
+        function showView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewName + '-view').classList.add('active');
+            
+            if (viewName === 'track') renderTrack();
+            else if (viewName === 'timeline') renderTimeline();
+            else if (viewName === 'table') renderTable();
+            else if (viewName === 'edit') renderEdit();
+        }
+
+        function getStatusText(status) {
+            const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
+            return map[status] || status;
+        }
+
+        function showNotification(message) {
+            // 알림 기능 제거됨 - 아무것도 하지 않음
+            console.log('알림:', message);
+        }
+
+        // 렌더링 함수들
+        function renderTrack() {
+            const container = document.getElementById('runners-container');
+            container.innerHTML = '';
+
+            const activeProjects = projects.filter(p => p.status !== 'done').sort((a, b) => b.progress - a.progress);
+
+            activeProjects.forEach((project, index) => {
+                const runner = document.createElement('div');
+                runner.className = `runner status-${project.status}`;
+                runner.style.cursor = 'pointer';
+                
+                const runnerIcons = ['🏃‍♂️', '🏃‍♀️', '🚀', '⚡'];
+                const icon = runnerIcons[index % runnerIcons.length];
+                
+                runner.innerHTML = `
+                    <div class="runner-icon">${icon}</div>
+                    <div class="runner-info">
+                        <div class="runner-name">${project.title}</div>
+                        <div class="runner-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="progress-percentage">${project.progress}%</div>
+                        </div>
+                        <div class="runner-meta">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                            <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                runner.onclick = function() { showProjectInfoModal(project.id); };
+                container.appendChild(runner);
+            });
+
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const allProjects = [...projects].sort((a, b) => {
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+
+            allProjects.forEach(project => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.innerHTML = `
+                    <td><strong>${project.title}</strong></td>
+                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="progress-track" style="flex: 1; height: 6px;">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <strong>${project.progress}%</strong>
+                        </div>
+                    </td>
+                    <td>${project.startDate || '미정'}</td>
+                    <td>${project.dueDate}</td>
+                `;
+                
+                row.onclick = function() { showProjectInfoModal(project.id); };
+                tbody.appendChild(row);
+            });
+
+            if (allProjects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">프로젝트가 없습니다!</td></tr>';
+            }
+        }
+
+        // 간트 차트 타임라인 렌더링 함수들
+        function renderTimeline() {
+            const container = document.getElementById('timeline-content');
+            container.innerHTML = '';
+            
+            const ganttChart = document.createElement('div');
+            ganttChart.className = 'gantt-chart';
+            
+            const ganttHeader = document.createElement('div');
+            ganttHeader.className = 'gantt-header';
+            
+            const months = ['프로젝트', '3월', '4월', '5월', '6월', '7월', '8월'];
+            months.forEach(month => {
+                const cell = document.createElement('div');
+                cell.className = 'gantt-header-cell';
+                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2024</div>`;
+                ganttHeader.appendChild(cell);
+            });
+            
+            ganttChart.appendChild(ganttHeader);
+            
+            const ganttBody = document.createElement('div');
+            ganttBody.className = 'gantt-body';
+            
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1;
+            const currentDay = today.getDate();
+            
+            projects.forEach(project => {
+                const row = document.createElement('div');
+                row.className = 'gantt-row';
+                
+                const nameCell = document.createElement('div');
+                nameCell.className = 'gantt-cell gantt-project-name';
+                nameCell.innerHTML = `
+                    <span class="status ${project.status}" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+                    ${project.title}
+                `;
+                nameCell.onclick = function() { showProjectInfoModal(project.id); };
+                row.appendChild(nameCell);
+                
+                for (let month = 3; month <= 8; month++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gantt-cell';
+                    
+                    const projectBar = createProjectBar(project, month);
+                    if (projectBar) {
+                        cell.appendChild(projectBar);
+                    }
+                    
+                    if (month === currentMonth) {
+                        const todayLine = document.createElement('div');
+                        todayLine.className = 'gantt-today-line';
+                        const dayPercentage = (currentDay / 31) * 100;
+                        todayLine.style.left = `${dayPercentage}%`;
+                        
+                        const todayMarker = document.createElement('div');
+                        todayMarker.className = 'gantt-today-marker';
+                        todayLine.appendChild(todayMarker);
+                        
+                        cell.appendChild(todayLine);
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                ganttBody.appendChild(row);
+            });
+            
+            ganttChart.appendChild(ganttBody);
+            container.appendChild(ganttChart);
+        }
+
+        function createProjectBar(project, month) {
+            const startDate = new Date(project.startDate);
+            const endDate = new Date(project.dueDate);
+            const startMonth = startDate.getMonth() + 1;
+            const endMonth = endDate.getMonth() + 1;
+            
+            if (month < startMonth || month > endMonth) {
+                return null;
+            }
+            
+            const bar = document.createElement('div');
+            bar.className = `gantt-bar ${project.status}`;
+            
+            let left = 0;
+            let width = 100;
+            
+            if (month === startMonth && month === endMonth) {
+                const startDay = startDate.getDate();
+                const endDay = endDate.getDate();
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                
+                left = (startDay / daysInMonth) * 100;
+                width = ((endDay - startDay + 1) / daysInMonth) * 100;
+            } else if (month === startMonth) {
+                const startDay = startDate.getDate();
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                left = (startDay / daysInMonth) * 100;
+                width = ((daysInMonth - startDay + 1) / daysInMonth) * 100;
+            } else if (month === endMonth) {
+                const endDay = endDate.getDate();
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                width = (endDay / daysInMonth) * 100;
+            }
+            
+            bar.style.left = `${left}%`;
+            bar.style.width = `${width}%`;
+            
+            if (month === startMonth) {
+                bar.textContent = `${project.progress}%`;
+            }
+            
+            bar.onclick = function(e) {
+                e.stopPropagation();
+                showProjectInfoModal(project.id);
+            };
+            
+            return bar;
+        }
+
+        // 보기 전용 상세 모달 (메인 페이지용)
+        function showProjectInfoModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            document.getElementById('detail-project-title').textContent = project.title;
+            
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <div class="info-value">
+                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <div class="info-value">${project.startDate || '미정'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <div class="info-value">${project.dueDate}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">태스크 완료</div>
+                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
+            setTimeout(() => {
+                const progressSection = document.querySelector('#detail-modal .section-title');
+                if (progressSection && progressSection.textContent.includes('진행률')) {
+                    progressSection.innerHTML = '📊 진행률';
+                }
+            }, 10);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            let tasksHtml = '';
+            
+            project.tasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+                        <div class="task-text">${task.text}</div>
+                    </div>
+                `;
+            });
+            
+            tasksContainer.innerHTML = tasksHtml;
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'none';
+            
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'block';
+            buttonArea.style.marginTop = '25px';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn';
+            closeBtn.style.width = '100%';
+            closeBtn.textContent = '닫기';
+            closeBtn.onclick = function() { hideDetailModal(); };
+            
+            buttonArea.appendChild(closeBtn);
+        }
+
+        function renderEdit() {
+            ['not-started', 'in-progress', 'done'].forEach(status => {
+                const container = document.getElementById(status);
+                container.innerHTML = '';
+                
+                projects.filter(p => p.status === status).forEach(project => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.cursor = 'pointer';
+                    
+                    let checkboxes = '';
+                    for (let i = 0; i < 10; i++) {
+                        const checked = (project.progress / 10) > i ? 'checked' : '';
+                        checkboxes += `<input type="checkbox" ${checked}>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="card-title">${project.title}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
+                            진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
+                        </div>
+                        <div class="checkboxes">${checkboxes}</div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: ${project.progress}%"></div>
+                        </div>
+                        <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;">
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', (e) => {
+                        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
+                            return;
+                        }
+                        showDetailModal(project.id);
+                    });
+                    
+                    const buttonContainer = card.querySelector('.button-container');
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = '✏️ 편집';
+                    editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDetailModal(project.id);
+                    });
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '🗑️ 삭제';
+                    deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        console.log('삭제 버튼 클릭됨, 프로젝트 ID:', project.id);
+                        deleteProject(project.id);
+                    });
+                    
+                    buttonContainer.appendChild(editBtn);
+                    buttonContainer.appendChild(deleteBtn);
+                    
+                    const checkboxElements = card.querySelectorAll('.checkboxes input[type="checkbox"]');
+                    checkboxElements.forEach((checkbox, index) => {
+                        checkbox.addEventListener('change', (e) => {
+                            e.stopPropagation();
+                            updateProgressFromCheckbox(project.id, index, checkbox.checked);
+                        });
+                    });
+                    
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        function updateProgressFromCheckbox(projectId, checkboxIndex, isChecked) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            let targetCard = null;
+            
+            document.querySelectorAll('.card').forEach(card => {
+                const titleElement = card.querySelector('.card-title');
+                if (titleElement && titleElement.textContent === project.title) {
+                    targetCard = card;
+                }
+            });
+            
+            if (targetCard) {
+                const checkboxes = targetCard.querySelectorAll('.checkboxes input[type="checkbox"]');
+                let checkedCount = 0;
+                
+                checkboxes.forEach(cb => {
+                    if (cb.checked) checkedCount++;
+                });
+                
+                const oldProgress = project.progress;
+                const oldStatus = project.status;
+                
+                project.progress = checkedCount * 10;
+                
+                if (project.progress > 0 && !project.startDate) {
+                    project.startDate = new Date().toISOString().split('T')[0];
+                }
+                
+                if (project.progress === 100) {
+                    project.status = 'done';
+                } else if (project.progress > 0) {
+                    project.status = 'in-progress';
+                } else {
+                    project.status = 'not-started';
+                }
+                
+                if (oldProgress !== project.progress || oldStatus !== project.status) {
+                    renderAllViews();
+                    showNotification(`${project.title} 진행률: ${project.progress}%`);
+                }
+            }
+        }
+
+        // 프로젝트 추가 모달 관련 함수들
+        function showAddModal() {
+            document.getElementById('add-modal').classList.add('show');
+            document.getElementById('add-project-title').value = '';
+            document.getElementById('add-project-start').value = '';
+            document.getElementById('add-project-due').value = '';
+            
+            const initialTaskInputs = document.querySelectorAll('#initial-tasks input');
+            initialTaskInputs.forEach(input => input.value = '');
+            
+            const taskItems = document.querySelectorAll('#initial-tasks .task-item');
+            for (let i = 3; i < taskItems.length; i++) {
+                taskItems[i].remove();
+            }
+            
+            setTimeout(() => document.getElementById('add-project-title').focus(), 100);
+        }
+
+        function hideAddModal() {
+            document.getElementById('add-modal').classList.remove('show');
+        }
+
+        function addInitialTask() {
+            const container = document.getElementById('initial-tasks');
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
+            taskItem.innerHTML = '<input type="text" class="add-task-input" placeholder="새로운 태스크" style="margin-top: 8px;">';
+            container.appendChild(taskItem);
+        }
+
+        function submitNewProject() {
+            const title = document.getElementById('add-project-title').value.trim();
+            const startDate = document.getElementById('add-project-start').value;
+            const dueDate = document.getElementById('add-project-due').value;
+            
+            if (!title) {
+                alert('프로젝트 제목을 입력해주세요.');
+                document.getElementById('add-project-title').focus();
+                return;
+            }
+            
+            if (!dueDate) {
+                alert('마감일을 선택해주세요.');
+                document.getElementById('add-project-due').focus();
+                return;
+            }
+            
+            if (startDate && new Date(startDate) > new Date(dueDate)) {
+                alert('시작일이 마감일보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            const taskInputs = document.querySelectorAll('#initial-tasks input');
+            const tasks = [];
+            let taskId = 1;
+            
+            taskInputs.forEach(input => {
+                const taskText = input.value.trim();
+                if (taskText) {
+                    tasks.push({
+                        id: taskId++,
+                        text: taskText,
+                        completed: false
+                    });
+                }
+            });
+            
+            if (tasks.length === 0) {
+                tasks.push(
+                    { id: 1, text: '프로젝트 계획 수립', completed: false },
+                    { id: 2, text: '리소스 준비', completed: false },
+                    { id: 3, text: '실행 및 모니터링', completed: false }
+                );
+            }
+            
+            const newProject = {
+                id: nextId++,
+                title,
+                status: 'not-started',
+                progress: 0,
+                startDate: startDate || '',
+                dueDate,
+                tasks
+            };
+            
+            projects.push(newProject);
+            renderAllViews();
+            hideAddModal();
+            showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
+        }
+
+        // 디테일 모달 함수들 (편집 탭용)
+        function showDetailModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            document.getElementById('detail-project-title').textContent = project.title + ' (편집)';
+            
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">프로젝트명</div>
+                    <input type="text" id="edit-title" class="add-task-input" value="${project.title}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <select id="edit-status" class="add-task-input" style="margin: 0; padding: 8px;">
+                        <option value="not-started" ${project.status === 'not-started' ? 'selected' : ''}>대기 중</option>
+                        <option value="in-progress" ${project.status === 'in-progress' ? 'selected' : ''}>진행 중</option>
+                        <option value="done" ${project.status === 'done' ? 'selected' : ''}>완료</option>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <input type="date" id="edit-start-date" class="add-task-input" value="${project.startDate}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <input type="date" id="edit-due-date" class="add-task-input" value="${project.dueDate}" style="margin: 0; padding: 8px;">
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = (project.progress / 10) > i;
+                checkbox.addEventListener('change', () => updateDetailProgressFromCheckbox());
+                checkboxContainer.appendChild(checkbox);
+            }
+            
+            renderDetailTasks();
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'block';
+            newTaskInput.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    addNewTask();
+                }
+            };
+            
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'flex';
+            buttonArea.style.gap = '10px';
+            buttonArea.style.marginTop = '25px';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn';
+            saveBtn.style.flex = '1';
+            saveBtn.textContent = '💾 저장';
+            saveBtn.addEventListener('click', () => saveDetailChanges());
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-cancel';
+            deleteBtn.style.flex = '1';
+            deleteBtn.textContent = '🗑️ 삭제';
+            deleteBtn.addEventListener('click', () => deleteProjectFromDetail());
+            
+            buttonArea.appendChild(saveBtn);
+            buttonArea.appendChild(deleteBtn);
+        }
+
+        function hideDetailModal() {
+            document.getElementById('detail-modal').classList.remove('show');
+            currentDetailProject = null;
+        }
+
+        function updateDetailProgress(progress) {
+            const circle = document.getElementById('detail-progress-circle');
+            circle.style.setProperty('--progress', progress);
+            circle.innerHTML = `<span>${progress}%</span>`;
+        }
+
+        function updateDetailProgressFromCheckbox() {
+            if (!currentDetailProject) return;
+            
+            const checkboxes = document.querySelectorAll('#detail-checkboxes input[type="checkbox"]');
+            let checkedCount = 0;
+            checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
+            
+            const newProgress = checkedCount * 10;
+            currentDetailProject.progress = newProgress;
+            
+            if (newProgress > 0 && !currentDetailProject.startDate) {
+                currentDetailProject.startDate = new Date().toISOString().split('T')[0];
+            }
+            
+            if (newProgress === 100) currentDetailProject.status = 'done';
+            else if (newProgress > 0) currentDetailProject.status = 'in-progress';
+            else currentDetailProject.status = 'not-started';
+            
+            updateDetailProgress(newProgress);
+            showDetailModal(currentDetailProject.id);
+        }
+
+        function renderDetailTasks() {
+            if (!currentDetailProject) return;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            tasksContainer.innerHTML = '';
+            
+            currentDetailProject.tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'task-checkbox';
+                checkbox.checked = task.completed;
+                checkbox.addEventListener('change', () => toggleDetailTask(task.id));
+                
+                const taskText = document.createElement('div');
+                taskText.className = 'task-text';
+                taskText.textContent = task.text;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.style.cssText = 'background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;';
+                deleteBtn.addEventListener('click', () => deleteDetailTask(task.id));
+                
+                taskDiv.appendChild(checkbox);
+                taskDiv.appendChild(taskText);
+                taskDiv.appendChild(deleteBtn);
+                
+                tasksContainer.appendChild(taskDiv);
+            });
+        }
+
+        function toggleDetailTask(taskId) {
+            if (!currentDetailProject) return;
+            
+            const task = currentDetailProject.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                renderDetailTasks();
+            }
+        }
+
+        function deleteDetailTask(taskId) {
+            if (!currentDetailProject) return;
+            
+            currentDetailProject.tasks = currentDetailProject.tasks.filter(t => t.id !== taskId);
+            renderDetailTasks();
+        }
+
+        function addNewTask() {
+            if (!currentDetailProject) return;
+            
+            const input = document.getElementById('new-task-input');
+            const taskText = input.value.trim();
+            
+            if (taskText) {
+                const newTaskId = Math.max(...currentDetailProject.tasks.map(t => t.id), 0) + 1;
+                currentDetailProject.tasks.push({
+                    id: newTaskId,
+                    text: taskText,
+                    completed: false
+                });
+                
+                input.value = '';
+                renderDetailTasks();
+            }
+        }
+
+        function saveDetailChanges() {
+            if (!currentDetailProject) return;
+            
+            const newTitle = document.getElementById('edit-title')?.value.trim();
+            const newStatus = document.getElementById('edit-status')?.value;
+            const newStartDate = document.getElementById('edit-start-date')?.value;
+            const newDueDate = document.getElementById('edit-due-date')?.value;
+            
+            if (!newTitle) {
+                alert('프로젝트 제목을 입력해주세요.');
+                return;
+            }
+            
+            if (!newDueDate) {
+                alert('마감일을 선택해주세요.');
+                return;
+            }
+            
+            if (newStartDate && new Date(newStartDate) > new Date(newDueDate)) {
+                alert('시작일이 마감일보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            currentDetailProject.title = newTitle;
+            currentDetailProject.status = newStatus;
+            currentDetailProject.startDate = newStartDate;
+            currentDetailProject.dueDate = newDueDate;
+            
+            renderAllViews();
+            showNotification('프로젝트 정보가 저장되었습니다!');
+            hideDetailModal();
+        }
+
+        function deleteProjectFromDetail() {
+            if (!currentDetailProject) return;
+            
+            projectToDelete = currentDetailProject;
+            document.getElementById('confirm-message').textContent = `"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`;
+            document.getElementById('confirm-modal').classList.add('show');
+            
+            // 원래 confirmDelete 함수를 수정해서 상세 모달도 닫도록 함
+            const originalConfirmDelete = window.confirmDelete;
+            window.confirmDelete = function() {
+                originalConfirmDelete();
+                hideDetailModal();
+                // 원래 함수로 복원
+                window.confirmDelete = originalConfirmDelete;
+            };
+        }
+
+        // 프로젝트 관리 함수들
+        let projectToDelete = null;
+
+        function deleteProject(id) {
+            console.log('deleteProject 함수 호출됨, ID:', id);
+            const project = projects.find(p => p.id === id);
+            console.log('찾은 프로젝트:', project);
+            if (!project) {
+                console.log('프로젝트를 찾을 수 없음');
+                return;
+            }
+            
+            console.log('커스텀 삭제 확인 모달 표시');
+            projectToDelete = project;
+            document.getElementById('confirm-message').textContent = `"${project.title}" 프로젝트를 삭제하시겠습니까?`;
+            document.getElementById('confirm-modal').classList.add('show');
+        }
+
+        function confirmDelete() {
+            if (!projectToDelete) return;
+            
+            console.log('사용자가 삭제 확인함');
+            const beforeLength = projects.length;
+            projects = projects.filter(p => p.id !== projectToDelete.id);
+            const afterLength = projects.length;
+            console.log(`프로젝트 배열 길이: ${beforeLength} -> ${afterLength}`);
+            
+            document.getElementById('confirm-modal').classList.remove('show');
+            projectToDelete = null;
+            
+            renderAllViews();
+            showNotification('프로젝트가 삭제되었습니다.');
+        }
+
+        function cancelDelete() {
+            console.log('사용자가 삭제 취소함');
+            document.getElementById('confirm-modal').classList.remove('show');
+            projectToDelete = null;
+        }
+
+        function renderAllViews() {
+            renderTrack();
+            renderTimeline();
+            renderTable();
+            renderEdit();
+        }
+
+        function clearAll() {
+            if (confirm('모든 프로젝트를 삭제하시겠습니까?')) {
+                projects = [];
+                renderAllViews();
+                showNotification('모든 프로젝트가 삭제되었습니다.');
+            }
+        }
+
+        function saveData() {
+            showNotification('데이터가 저장되었습니다!');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(projects, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kanban-sprint-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('데이터가 내보내졌습니다!');
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllViews();
+        });
+        
+        renderAllViews();
+    </script><!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Sprint</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        /* 헤더 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-toggle {
+            padding: 10px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        /* 사이드바 */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 80px;
+            width: 60px;
+            height: calc(100vh - 80px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            transition: width 0.3s ease;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .sidebar.expanded {
+            width: 250px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            width: 20px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .nav-text {
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.expanded .nav-text {
+            opacity: 1;
+        }
+
+        /* 메인 콘텐츠 */
+        .main-content {
+            margin-left: 60px;
+            padding: 30px;
+            min-height: calc(100vh - 80px);
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar.expanded + .main-content {
+            margin-left: 250px;
+        }
+
+        /* 스프린트 트랙 */
+        .sprint-track {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .track-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .track-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .race-track {
+            position: relative;
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 30px;
+            border: 3px dashed #e2e8f0;
+        }
+
+        .track-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 48px, #e2e8f0 48px, #e2e8f0 50px);
+            border-radius: 20px;
+        }
+
+        .runner {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .runner:hover {
+            transform: translateX(10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .runner-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .runner.status-in-progress .runner-icon {
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .runner-info { flex: 1; }
+
+        .runner-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .runner-progress {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            color: #3b82f6;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .runner-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .finish-line {
+            text-align: center;
+            padding: 20px;
+            border-top: 3px dashed #22c55e;
+            margin-top: 20px;
+            color: #22c55e;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* 간트 차트 타임라인 뷰 */
+        .timeline-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .timeline-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e40af;
+        }
+
+        .gantt-chart {
+            min-width: 800px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .gantt-header {
+            display: grid;
+            grid-template-columns: 200px repeat(6, 1fr);
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .gantt-header-cell {
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 700;
+            color: #1e40af;
+            border-right: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .gantt-header-cell:first-child {
+            text-align: left;
+            background: #ffffff;
+        }
+
+        .gantt-body {
+            display: grid;
+            grid-template-columns: 200px repeat(6, 1fr);
+        }
+
+        .gantt-row {
+            display: contents;
+        }
+
+        .gantt-row:hover .gantt-cell {
+            background: #f8fafc;
+        }
+
+        .gantt-cell {
+            padding: 15px 10px;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+            transition: background 0.2s ease;
+        }
+
+        .gantt-project-name {
+            font-weight: 600;
+            color: #1e293b;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .gantt-project-name:hover {
+            color: #3b82f6;
+        }
+
+        .gantt-bar {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 24px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .gantt-bar:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .gantt-bar.not-started {
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
+
+        .gantt-bar.in-progress {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+        }
+
+        .gantt-bar.done {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .gantt-today-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dc2626;
+            z-index: 10;
+            box-shadow: 0 0 4px rgba(220, 38, 38, 0.5);
+        }
+
+        .gantt-today-marker {
+            position: absolute;
+            top: -8px;
+            left: -6px;
+            width: 12px;
+            height: 12px;
+            background: #dc2626;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .month-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+            .gantt-chart {
+                min-width: 600px;
+            }
+            
+            .gantt-header {
+                grid-template-columns: 150px repeat(6, 80px);
+            }
+            
+            .gantt-body {
+                grid-template-columns: 150px repeat(6, 80px);
+            }
+        }
+
+        /* 테이블 뷰 */
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        
+        th {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            font-weight: 700;
+            color: #1e40af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status.not-started { background: #f1f5f9; color: #64748b; }
+        .status.in-progress { background: #dbeafe; color: #3b82f6; }
+        .status.done { background: #dcfce7; color: #16a34a; }
+
+        /* 편집 보드 */
+        .edit-controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .column {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+        }
+
+        .column-header {
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .checkboxes {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .checkboxes input {
+            transform: scale(1.3);
+            accent-color: #3b82f6;
+        }
+
+        .add-card {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .add-card:hover {
+            background: #f1f5f9;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        /* 디테일 모달 */
+        .detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .detail-modal.show {
+            display: flex;
+        }
+
+        .detail-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e40af;
+        }
+
+        .close-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .task-list {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            transform: scale(1.2);
+            accent-color: #3b82f6;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 14px;
+            color: #1e293b;
+        }
+
+        .add-task-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-task-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .progress-controls {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .progress-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#3b82f6 0deg, #3b82f6 calc(var(--progress) * 3.6deg), #e2e8f0 calc(var(--progress) * 3.6deg));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #1e40af;
+            font-size: 16px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .progress-circle::before {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .progress-circle span {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 취소 버튼 스타일 */
+        .btn-cancel {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-cancel:hover {
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .main-content { margin-left: 60px; padding: 20px; }
+            .sidebar.expanded + .main-content { margin-left: 60px; }
+            .board { grid-template-columns: 1fr; }
+            .detail-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <h1>🏃‍♂️ Kanban Sprint</h1>
+        <button class="nav-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="nav-item active" onclick="showView('track')">
+            <div class="nav-icon">🏁</div>
+            <div class="nav-text">스프린트 트랙</div>
+        </div>
+        <div class="nav-item" onclick="showView('timeline')">
+            <div class="nav-icon">📅</div>
+            <div class="nav-text">타임라인</div>
+        </div>
+        <div class="nav-item" onclick="showView('table')">
+            <div class="nav-icon">📊</div>
+            <div class="nav-text">전체 프로젝트</div>
+        </div>
+        <div class="nav-item" onclick="showView('edit')">
+            <div class="nav-icon">⚡</div>
+            <div class="nav-text">편집</div>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+        <!-- 스프린트 트랙 뷰 -->
+        <div id="track-view" class="view active">
+            <div class="sprint-track">
+                <div class="track-header">
+                    <div class="track-title">🏁 Sprint Track</div>
+                </div>
+
+                <div class="race-track">
+                    <div class="track-lines"></div>
+                    <div id="runners-container"></div>
+                </div>
+
+                <div class="finish-line">🏆 FINISH LINE 🏆</div>
+            </div>
+        </div>
+
+        <!-- 타임라인 뷰 -->
+        <div id="timeline-view" class="view">
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <div class="timeline-title">📅 프로젝트 간트 차트</div>
+                </div>
+                <div class="timeline-content" id="timeline-content">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+        </div>
+
+        <div id="table-view" class="view">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>프로젝트명</th>
+                            <th>상태</th>
+                            <th>진행률</th>
+                            <th>착수일</th>
+                            <th>마감일</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 편집 뷰 -->
+        <div id="edit-view" class="view">
+            <div class="edit-controls">
+                <button class="btn" onclick="showAddModal()">➕ 프로젝트 추가</button>
+                <button class="btn" onclick="clearAll()">🗑️ 전체 삭제</button>
+                <button class="btn" onclick="saveData()">💾 저장</button>
+                <button class="btn" onclick="exportData()">📤 내보내기</button>
+            </div>
+            
+            <div class="board">
+                <div class="column">
+                    <div class="column-header">🏃‍♂️ 대기 중</div>
+                    <div id="not-started"></div>
+                    <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
+                </div>
+                <div class="column">
+                    <div class="column-header">⚡ 달리는 중</div>
+                    <div id="in-progress"></div>
+                    <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
+                </div>
+                <div class="column">
+                    <div class="column-header">🏆 완료</div>
+                    <div id="done"></div>
+                    <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">저장되었습니다!</div>
+
+    <!-- 프로젝트 추가 모달 -->
+    <div id="add-modal" class="detail-modal">
+        <div class="detail-content">
+            <div class="detail-header">
+                <div class="detail-title">➕ 새 프로젝트 추가</div>
+                <button class="close-btn" onclick="hideAddModal()">✕</button>
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">📌 프로젝트 제목</div>
+                <input type="text" id="add-project-title" class="add-task-input" placeholder="예: 새로운 웹사이트 개발" maxlength="100">
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">🚀 시작일</div>
+                <input type="date" id="add-project-start" class="add-task-input">
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">📅 마감일</div>
+                <input type="date" id="add-project-due" class="add-task-input">
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">📝 초기 태스크 (선택사항)</div>
+                <div id="initial-tasks">
+                    <div class="task-item">
+                        <input type="text" class="add-task-input" placeholder="예: 프로젝트 계획 수립" style="margin-top: 0;">
+                    </div>
+                    <div class="task-item">
+                        <input type="text" class="add-task-input" placeholder="예: 리소스 준비" style="margin-top: 8px;">
+                    </div>
+                    <div class="task-item">
+                        <input type="text" class="add-task-input" placeholder="예: 실행 및 모니터링" style="margin-top: 8px;">
+                    </div>
+                </div>
+                <button class="btn" style="margin-top: 15px; padding: 8px 15px; font-size: 12px;" onclick="addInitialTask()">+ 태스크 추가</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn" style="flex: 1;" onclick="submitNewProject()">✅ 프로젝트 생성</button>
+                <button class="btn btn-cancel" style="flex: 1;" onclick="hideAddModal()">❌ 취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 디테일 모달 -->
+    <div id="detail-modal" class="detail-modal">
+        <div class="detail-content">
+            <div class="detail-header">
+                <div class="detail-title" id="detail-project-title">프로젝트 상세</div>
+                <button class="close-btn" onclick="hideDetailModal()">✕</button>
+            </div>
+
+            <div class="detail-section">
+                <div class="section-title">📊 프로젝트 정보</div>
+                <div class="detail-info" id="detail-info">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <div class="section-title">📊 진행률</div>
+                <div class="progress-controls">
+                    <div class="progress-display">
+                        <div class="progress-circle" id="detail-progress-circle">0%</div>
+                        <div>
+                            <div class="checkboxes" id="detail-checkboxes">
+                                <!-- 동적 생성 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <div class="section-title">📋 세부 태스크</div>
+                <div class="task-list" id="detail-tasks">
+                    <!-- 동적 생성 -->
+                </div>
+                <input type="text" class="add-task-input" placeholder="새 태스크 입력 후 Enter..." id="new-task-input">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn" style="flex: 1;" onclick="saveDetailChanges()">💾 저장</button>
+                <button class="btn btn-cancel" style="flex: 1;" onclick="deleteProjectFromDetail()">🗑️ 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let projects = [
+            { 
+                id: 1, 
+                title: "웹사이트 리뉴얼", 
+                status: "in-progress", 
+                progress: 70, 
+                startDate: "2024-03-15", 
+                dueDate: "2024-05-20",
+                tasks: [
+                    { id: 1, text: "디자인 시안 작성", completed: true },
+                    { id: 2, text: "프론트엔드 개발", completed: true },
+                    { id: 3, text: "백엔드 API 연동", completed: true },
+                    { id: 4, text: "테스트 및 배포", completed: false }
+                ]
+            },
+            { 
+                id: 2, 
+                title: "모바일 앱 개발", 
+                status: "not-started", 
+                progress: 0, 
+                startDate: "2024-06-01", 
+                dueDate: "2024-08-15",
+                tasks: [
+                    { id: 1, text: "요구사항 분석", completed: false },
+                    { id: 2, text: "UI/UX 디자인", completed: false },
+                    { id: 3, text: "개발 및 테스트", completed: false }
+                ]
+            },
+            { 
+                id: 3, 
+                title: "데이터베이스 최적화", 
+                status: "done", 
+                progress: 100, 
+                startDate: "2024-03-01", 
+                dueDate: "2024-04-15",
+                tasks: [
+                    { id: 1, text: "성능 분석", completed: true },
+                    { id: 2, text: "쿼리 최적화", completed: true },
+                    { id: 3, text: "인덱스 재구성", completed: true },
+                    { id: 4, text: "결과 검증", completed: true }
+                ]
+            },
+            { 
+                id: 4, 
+                title: "마케팅 캠페인", 
+                status: "in-progress", 
+                progress: 40, 
+                startDate: "2024-04-01", 
+                dueDate: "2024-07-31",
+                tasks: [
+                    { id: 1, text: "타겟 고객 분석", completed: true },
+                    { id: 2, text: "콘텐츠 제작", completed: true },
+                    { id: 3, text: "광고 집행", completed: false },
+                    { id: 4, text: "성과 측정", completed: false },
+                    { id: 5, text: "결과 보고서", completed: false }
+                ]
+            },
+            { 
+                id: 5, 
+                title: "API 개발", 
+                status: "done", 
+                progress: 100, 
+                startDate: "2024-03-10", 
+                dueDate: "2024-04-30",
+                tasks: [
+                    { id: 1, text: "API 설계", completed: true },
+                    { id: 2, text: "개발", completed: true },
+                    { id: 3, text: "테스트", completed: true }
+                ]
+            },
+            { 
+                id: 6, 
+                title: "보안 강화", 
+                status: "in-progress", 
+                progress: 60, 
+                startDate: "2024-05-01", 
+                dueDate: "2024-06-30",
+                tasks: [
+                    { id: 1, text: "보안 감사", completed: true },
+                    { id: 2, text: "취약점 수정", completed: false }
+                ]
+            }
+        ];
+        let nextId = 7;
+        let currentDetailProject = null;
+
+        // 기본 함수들
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('expanded');
+        }
+
+        function showView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewName + '-view').classList.add('active');
+            
+            if (viewName === 'track') renderTrack();
+            else if (viewName === 'timeline') renderTimeline();
+            else if (viewName === 'table') renderTable();
+            else if (viewName === 'edit') renderEdit();
+        }
+
+        // 간트 차트 타임라인 렌더링 함수들
+        function renderTimeline() {
+            const container = document.getElementById('timeline-content');
+            container.innerHTML = '';
+            
+            // 간트 차트 생성
+            const ganttChart = document.createElement('div');
+            ganttChart.className = 'gantt-chart';
+            
+            // 헤더 생성
+            const ganttHeader = document.createElement('div');
+            ganttHeader.className = 'gantt-header';
+            
+            const months = ['프로젝트', '3월', '4월', '5월', '6월', '7월', '8월'];
+            months.forEach(month => {
+                const cell = document.createElement('div');
+                cell.className = 'gantt-header-cell';
+                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2024</div>`;
+                ganttHeader.appendChild(cell);
+            });
+            
+            ganttChart.appendChild(ganttHeader);
+            
+            // 바디 생성
+            const ganttBody = document.createElement('div');
+            ganttBody.className = 'gantt-body';
+            
+            // 오늘 날짜로 현재 위치 계산
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // 1-12
+            const currentDay = today.getDate();
+            
+            projects.forEach(project => {
+                const row = document.createElement('div');
+                row.className = 'gantt-row';
+                
+                // 프로젝트 이름 셀
+                const nameCell = document.createElement('div');
+                nameCell.className = 'gantt-cell gantt-project-name';
+                nameCell.innerHTML = `
+                    <span class="status ${project.status}" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+                    ${project.title}
+                `;
+                nameCell.onclick = function() { showProjectInfoModal(project.id); };
+                row.appendChild(nameCell);
+                
+                // 월별 셀들 (3월-8월)
+                for (let month = 3; month <= 8; month++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gantt-cell';
+                    
+                    // 프로젝트 바 생성
+                    const projectBar = createProjectBar(project, month);
+                    if (projectBar) {
+                        cell.appendChild(projectBar);
+                    }
+                    
+                    // 오늘 표시 (현재 월인 경우)
+                    if (month === currentMonth) {
+                        const todayLine = document.createElement('div');
+                        todayLine.className = 'gantt-today-line';
+                        const dayPercentage = (currentDay / 31) * 100;
+                        todayLine.style.left = `${dayPercentage}%`;
+                        
+                        const todayMarker = document.createElement('div');
+                        todayMarker.className = 'gantt-today-marker';
+                        todayLine.appendChild(todayMarker);
+                        
+                        cell.appendChild(todayLine);
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                ganttBody.appendChild(row);
+            });
+            
+            ganttChart.appendChild(ganttBody);
+            container.appendChild(ganttChart);
+        }
+
+        function createProjectBar(project, month) {
+            const startDate = new Date(project.startDate);
+            const endDate = new Date(project.dueDate);
+            const startMonth = startDate.getMonth() + 1;
+            const endMonth = endDate.getMonth() + 1;
+            
+            // 이 월에 프로젝트가 없으면 null 반환
+            if (month < startMonth || month > endMonth) {
+                return null;
+            }
+            
+            const bar = document.createElement('div');
+            bar.className = `gantt-bar ${project.status}`;
+            
+            // 바의 위치와 크기 계산
+            let left = 0;
+            let width = 100;
+            
+            if (month === startMonth && month === endMonth) {
+                // 시작월과 종료월이 같은 경우
+                const startDay = startDate.getDate();
+                const endDay = endDate.getDate();
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                
+                left = (startDay / daysInMonth) * 100;
+                width = ((endDay - startDay + 1) / daysInMonth) * 100;
+            } else if (month === startMonth) {
+                // 시작월인 경우
+                const startDay = startDate.getDate();
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                left = (startDay / daysInMonth) * 100;
+                width = ((daysInMonth - startDay + 1) / daysInMonth) * 100;
+            } else if (month === endMonth) {
+                // 종료월인 경우
+                const endDay = endDate.getDate();
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                width = (endDay / daysInMonth) * 100;
+            }
+            
+            bar.style.left = `${left}%`;
+            bar.style.width = `${width}%`;
+            
+            // 진행률 표시 (시작월에만 표시)
+            if (month === startMonth) {
+                bar.textContent = `${project.progress}%`;
+            }
+            
+            bar.onclick = function(e) {
+                e.stopPropagation();
+                showProjectInfoModal(project.id);
+            };
+            
+            return bar;
+        }            });
+            
+            // 필터 버튼 상태 업데이트
+            updateTimelineFilterButtons();
+            
+            if (filteredProjects.length === 0) {
+                container.innerHTML += '<div style="text-align: center; color: #64748b; padding: 60px;">표시할 프로젝트가 없습니다.</div>';
+            }
+        }
+
+        function calculateProjectDuration(project) {
+            if (!project.startDate || !project.dueDate) return null;
+            
+            const start = new Date(project.startDate);
+            const end = new Date(project.dueDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return '당일';
+            if (diffDays < 7) return `${diffDays}일`;
+            if (diffDays < 30) return `${Math.ceil(diffDays / 7)}주`;
+            return `${Math.ceil(diffDays / 30)}개월`;
+        }
+
+        function calculateDaysRemaining(project) {
+            const today = new Date();
+            const dueDate = new Date(project.dueDate);
+            const diffTime = dueDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (project.status === 'done') return '완료됨';
+            if (diffDays < 0) return `${Math.abs(diffDays)}일 지연`;
+            if (diffDays === 0) return '오늘 마감';
+            if (diffDays === 1) return '내일 마감';
+            return `${diffDays}일 남음`;
+        }
+
+        function getDaysRemainingColor(daysText) {
+            if (daysText.includes('완료')) return '#22c55e';
+            if (daysText.includes('지연')) return '#dc2626';
+            if (daysText.includes('오늘') || daysText.includes('내일')) return '#f59e0b';
+            return '#64748b';
+        }
+
+        function getStatusText(status) {
+            const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
+            return map[status] || status;
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `✅ ${message}`;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 프로젝트 추가 모달 관련 함수들
+        function showAddModal() {
+            document.getElementById('add-modal').classList.add('show');
+            document.getElementById('add-project-title').value = '';
+            document.getElementById('add-project-start').value = '';
+            document.getElementById('add-project-due').value = '';
+            
+            // 초기 태스크 입력 필드 초기화
+            const initialTaskInputs = document.querySelectorAll('#initial-tasks input');
+            initialTaskInputs.forEach(input => input.value = '');
+            
+            // 추가된 태스크 필드들 제거 (기본 3개만 남김)
+            const taskItems = document.querySelectorAll('#initial-tasks .task-item');
+            for (let i = 3; i < taskItems.length; i++) {
+                taskItems[i].remove();
+            }
+            
+            setTimeout(() => document.getElementById('add-project-title').focus(), 100);
+        }
+
+        function hideAddModal() {
+            document.getElementById('add-modal').classList.remove('show');
+        }
+
+        function addInitialTask() {
+            const container = document.getElementById('initial-tasks');
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
+            taskItem.innerHTML = '<input type="text" class="add-task-input" placeholder="새로운 태스크" style="margin-top: 8px;">';
+            container.appendChild(taskItem);
+        }
+
+        function submitNewProject() {
+            const title = document.getElementById('add-project-title').value.trim();
+            const startDate = document.getElementById('add-project-start').value;
+            const dueDate = document.getElementById('add-project-due').value;
+            
+            if (!title) {
+                alert('프로젝트 제목을 입력해주세요.');
+                document.getElementById('add-project-title').focus();
+                return;
+            }
+            
+            if (!dueDate) {
+                alert('마감일을 선택해주세요.');
+                document.getElementById('add-project-due').focus();
+                return;
+            }
+            
+            // 시작일이 마감일보다 늦은 경우 확인
+            if (startDate && new Date(startDate) > new Date(dueDate)) {
+                alert('시작일이 마감일보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            // 초기 태스크 수집
+            const taskInputs = document.querySelectorAll('#initial-tasks input');
+            const tasks = [];
+            let taskId = 1;
+            
+            taskInputs.forEach(input => {
+                const taskText = input.value.trim();
+                if (taskText) {
+                    tasks.push({
+                        id: taskId++,
+                        text: taskText,
+                        completed: false
+                    });
+                }
+            });
+            
+            // 기본 태스크가 없으면 기본값 추가
+            if (tasks.length === 0) {
+                tasks.push(
+                    { id: 1, text: '프로젝트 계획 수립', completed: false },
+                    { id: 2, text: '리소스 준비', completed: false },
+                    { id: 3, text: '실행 및 모니터링', completed: false }
+                );
+            }
+            
+            const newProject = {
+                id: nextId++,
+                title,
+                status: 'not-started',
+                progress: 0,
+                startDate: startDate || '',
+                dueDate,
+                tasks
+            };
+            
+            projects.push(newProject);
+            renderAllViews();
+            hideAddModal();
+            showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
+        }
+
+        // 디테일 모달 함수들 (편집 탭용)
+        function showDetailModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            document.getElementById('detail-project-title').textContent = project.title + ' (편집)';
+            
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">프로젝트명</div>
+                    <input type="text" id="edit-title" class="add-task-input" value="${project.title}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <select id="edit-status" class="add-task-input" style="margin: 0; padding: 8px;">
+                        <option value="not-started" ${project.status === 'not-started' ? 'selected' : ''}>대기 중</option>
+                        <option value="in-progress" ${project.status === 'in-progress' ? 'selected' : ''}>진행 중</option>
+                        <option value="done" ${project.status === 'done' ? 'selected' : ''}>완료</option>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <input type="date" id="edit-start-date" class="add-task-input" value="${project.startDate}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <input type="date" id="edit-due-date" class="add-task-input" value="${project.dueDate}" style="margin: 0; padding: 8px;">
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = (project.progress / 10) > i;
+                checkbox.addEventListener('change', () => updateDetailProgressFromCheckbox());
+                checkboxContainer.appendChild(checkbox);
+            }
+            
+            renderDetailTasks();
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            // 새 태스크 입력 활성화
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'block';
+            newTaskInput.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    addNewTask();
+                }
+            };
+            
+            // 편집 버튼 복원 (이벤트 리스너로)
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'flex';
+            buttonArea.style.gap = '10px';
+            buttonArea.style.marginTop = '25px';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn';
+            saveBtn.style.flex = '1';
+            saveBtn.textContent = '💾 저장';
+            saveBtn.addEventListener('click', () => saveDetailChanges());
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-cancel';
+            deleteBtn.style.flex = '1';
+            deleteBtn.textContent = '🗑️ 삭제';
+            deleteBtn.addEventListener('click', () => deleteProjectFromDetail());
+            
+            buttonArea.appendChild(saveBtn);
+            buttonArea.appendChild(deleteBtn);
+        }
+
+        function hideDetailModal() {
+            document.getElementById('detail-modal').classList.remove('show');
+            currentDetailProject = null;
+        }
+
+        function updateDetailProgress(progress) {
+            const circle = document.getElementById('detail-progress-circle');
+            circle.style.setProperty('--progress', progress);
+            circle.innerHTML = `<span>${progress}%</span>`;
+        }
+
+        function updateDetailProgressFromCheckbox() {
+            if (!currentDetailProject) return;
+            
+            const checkboxes = document.querySelectorAll('#detail-checkboxes input[type="checkbox"]');
+            let checkedCount = 0;
+            checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
+            
+            const newProgress = checkedCount * 10;
+            currentDetailProject.progress = newProgress;
+            
+            if (newProgress > 0 && !currentDetailProject.startDate) {
+                currentDetailProject.startDate = new Date().toISOString().split('T')[0];
+            }
+            
+            if (newProgress === 100) currentDetailProject.status = 'done';
+            else if (newProgress > 0) currentDetailProject.status = 'in-progress';
+            else currentDetailProject.status = 'not-started';
+            
+            updateDetailProgress(newProgress);
+            showDetailModal(currentDetailProject.id);
+        }
+
+        function renderDetailTasks() {
+            if (!currentDetailProject) return;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            tasksContainer.innerHTML = '';
+            
+            currentDetailProject.tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'task-checkbox';
+                checkbox.checked = task.completed;
+                checkbox.addEventListener('change', () => toggleDetailTask(task.id));
+                
+                const taskText = document.createElement('div');
+                taskText.className = 'task-text';
+                taskText.textContent = task.text;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.style.cssText = 'background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;';
+                deleteBtn.addEventListener('click', () => deleteDetailTask(task.id));
+                
+                taskDiv.appendChild(checkbox);
+                taskDiv.appendChild(taskText);
+                taskDiv.appendChild(deleteBtn);
+                
+                tasksContainer.appendChild(taskDiv);
+            });
+        }
+
+        function toggleDetailTask(taskId) {
+            if (!currentDetailProject) return;
+            
+            const task = currentDetailProject.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                renderDetailTasks();
+            }
+        }
+
+        function deleteDetailTask(taskId) {
+            if (!currentDetailProject) return;
+            
+            currentDetailProject.tasks = currentDetailProject.tasks.filter(t => t.id !== taskId);
+            renderDetailTasks();
+        }
+
+        function addNewTask() {
+            if (!currentDetailProject) return;
+            
+            const input = document.getElementById('new-task-input');
+            const taskText = input.value.trim();
+            
+            if (taskText) {
+                const newTaskId = Math.max(...currentDetailProject.tasks.map(t => t.id), 0) + 1;
+                currentDetailProject.tasks.push({
+                    id: newTaskId,
+                    text: taskText,
+                    completed: false
+                });
+                
+                input.value = '';
+                renderDetailTasks();
+            }
+        }
+
+        function saveDetailChanges() {
+            if (!currentDetailProject) return;
+            
+            // 편집된 정보 수집
+            const newTitle = document.getElementById('edit-title')?.value.trim();
+            const newStatus = document.getElementById('edit-status')?.value;
+            const newStartDate = document.getElementById('edit-start-date')?.value;
+            const newDueDate = document.getElementById('edit-due-date')?.value;
+            
+            // 유효성 검사
+            if (!newTitle) {
+                alert('프로젝트 제목을 입력해주세요.');
+                return;
+            }
+            
+            if (!newDueDate) {
+                alert('마감일을 선택해주세요.');
+                return;
+            }
+            
+            if (newStartDate && new Date(newStartDate) > new Date(newDueDate)) {
+                alert('시작일이 마감일보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            // 변경사항 적용
+            currentDetailProject.title = newTitle;
+            currentDetailProject.status = newStatus;
+            currentDetailProject.startDate = newStartDate;
+            currentDetailProject.dueDate = newDueDate;
+            
+            renderAllViews();
+            showNotification('프로젝트 정보가 저장되었습니다!');
+            hideDetailModal();
+        }
+
+        function deleteProjectFromDetail() {
+            if (!currentDetailProject) return;
+            
+            if (confirm(`"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`)) {
+                projects = projects.filter(p => p.id !== currentDetailProject.id);
+                hideDetailModal();
+                renderAllViews();
+                showNotification('프로젝트가 삭제되었습니다.');
+            }
+        }
+
+        // 렌더링 함수들
+        function renderTrack() {
+            const container = document.getElementById('runners-container');
+            container.innerHTML = '';
+
+            const activeProjects = projects.filter(p => p.status !== 'done').sort((a, b) => b.progress - a.progress);
+
+            activeProjects.forEach((project, index) => {
+                const runner = document.createElement('div');
+                runner.className = `runner status-${project.status}`;
+                runner.style.cursor = 'pointer';
+                
+                const runnerIcons = ['🏃‍♂️', '🏃‍♀️', '🚀', '⚡'];
+                const icon = runnerIcons[index % runnerIcons.length];
+                
+                runner.innerHTML = `
+                    <div class="runner-icon">${icon}</div>
+                    <div class="runner-info">
+                        <div class="runner-name">${project.title}</div>
+                        <div class="runner-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="progress-percentage">${project.progress}%</div>
+                        </div>
+                        <div class="runner-meta">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                            <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // 전역 함수로 클릭 이벤트 추가
+                runner.onclick = function() { showProjectInfoModal(project.id); };
+                
+                container.appendChild(runner);
+            });
+
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const completedProjects = projects.filter(p => p.status === 'done');
+
+            completedProjects.forEach(project => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.innerHTML = `
+                    <td><strong>${project.title}</strong></td>
+                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="progress-track" style="flex: 1; height: 6px;">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <strong>${project.progress}%</strong>
+                        </div>
+                    </td>
+                    <td>${project.startDate || '미정'}</td>
+                    <td>${project.dueDate}</td>
+                `;
+                
+                // 전역 함수로 클릭 이벤트 추가
+                row.onclick = function() { showProjectInfoModal(project.id); };
+                
+                tbody.appendChild(row);
+            });
+
+            if (completedProjects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">완료된 프로젝트가 없습니다!</td></tr>';
+            }
+        }
+
+        // 보기 전용 상세 모달 (메인 페이지용) - 기존 모달 재활용
+        function showProjectInfoModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            // 제목 설정
+            document.getElementById('detail-project-title').textContent = project.title;
+            
+            // 프로젝트 정보 (읽기 전용)
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <div class="info-value">
+                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <div class="info-value">${project.startDate || '미정'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <div class="info-value">${project.dueDate}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">태스크 완료</div>
+                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
+                </div>
+            `;
+            
+            // 진행률 설정 (읽기 전용)
+            updateDetailProgress(project.progress);
+            
+            // 진행률 제목 변경
+            setTimeout(() => {
+                const progressSection = document.querySelector('#detail-modal .section-title');
+                if (progressSection && progressSection.textContent.includes('진행률')) {
+                    progressSection.innerHTML = '📊 진행률';
+                }
+            }, 10);
+            
+            // 진행률 표시만 (체크박스 제거)
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
+            
+            // 태스크 목록 (읽기 전용)
+            const tasksContainer = document.getElementById('detail-tasks');
+            let tasksHtml = '';
+            
+            project.tasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+                        <div class="task-text">${task.text}</div>
+                    </div>
+                `;
+            });
+            
+            tasksContainer.innerHTML = tasksHtml;
+            
+            // 모달 표시
+            document.getElementById('detail-modal').classList.add('show');
+            
+            // 새 태스크 입력 비활성화
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'none';
+            
+            // 버튼 영역을 닫기 버튼만으로 변경
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'block';
+            buttonArea.style.marginTop = '25px';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn';
+            closeBtn.style.width = '100%';
+            closeBtn.textContent = '닫기';
+            closeBtn.onclick = function() { hideDetailModal(); };
+            
+            buttonArea.appendChild(closeBtn);
+        }
+
+        function renderDetailTasks() {
+            if (!currentDetailProject) return;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            let tasksHtml = '';
+            
+            currentDetailProject.tasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
+                               onchange="toggleDetailTask(${task.id})">
+                        <div class="task-text">${task.text}</div>
+                        <button style="background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;" 
+                                onclick="deleteDetailTask(${task.id})">🗑️</button>
+                    </div>
+                `;
+            });
+            
+            tasksContainer.innerHTML = tasksHtml;
+        }
+
+        function renderEdit() {
+            ['not-started', 'in-progress', 'done'].forEach(status => {
+                const container = document.getElementById(status);
+                container.innerHTML = '';
+                
+                projects.filter(p => p.status === status).forEach(project => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.cursor = 'pointer';
+                    
+                    // 체크박스 생성
+                    let checkboxes = '';
+                    for (let i = 0; i < 10; i++) {
+                        const checked = (project.progress / 10) > i ? 'checked' : '';
+                        checkboxes += `<input type="checkbox" ${checked}>`;
+                    }
+                    
+                    // 카드 기본 HTML 생성
+                    card.innerHTML = `
+                        <div class="card-title">${project.title}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
+                            진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
+                        </div>
+                        <div class="checkboxes">${checkboxes}</div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: ${project.progress}%"></div>
+                        </div>
+                        <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;">
+                        </div>
+                    `;
+                    
+                    // 카드 클릭 시 편집 모달 열기
+                    card.addEventListener('click', (e) => {
+                        // 버튼이나 체크박스 클릭 시에는 모달을 열지 않음
+                        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
+                            return;
+                        }
+                        showDetailModal(project.id);
+                    });
+                    
+                    // 버튼들을 별도로 생성하고 이벤트 리스너 추가
+                    const buttonContainer = card.querySelector('.button-container');
+                    
+                    // 편집 버튼 (통합)
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = '✏️ 편집';
+                    editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDetailModal(project.id);
+                    });
+                    
+                    // 삭제 버튼
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '🗑️ 삭제';
+                    deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteProject(project.id);
+                    });
+                    
+                    buttonContainer.appendChild(editBtn);
+                    buttonContainer.appendChild(deleteBtn);
+                    
+                    // 체크박스 이벤트 리스너 추가
+                    const checkboxElements = card.querySelectorAll('.checkboxes input[type="checkbox"]');
+                    checkboxElements.forEach((checkbox, index) => {
+                        checkbox.addEventListener('change', (e) => {
+                            e.stopPropagation();
+                            updateProgressFromCheckbox(project.id, index, checkbox.checked);
+                        });
+                    });
+                    
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        // 개선된 체크박스 진행률 업데이트
+        function updateProgressFromCheckbox(projectId, checkboxIndex, isChecked) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            // 현재 체크된 체크박스들의 개수를 정확히 계산
+            let targetCard = null;
+            
+            // 카드 찾기
+            document.querySelectorAll('.card').forEach(card => {
+                const titleElement = card.querySelector('.card-title');
+                if (titleElement && titleElement.textContent === project.title) {
+                    targetCard = card;
+                }
+            });
+            
+            if (targetCard) {
+                // 체크박스 상태 기반으로 진행률 계산
+                const checkboxes = targetCard.querySelectorAll('.checkboxes input[type="checkbox"]');
+                let checkedCount = 0;
+                
+                checkboxes.forEach(cb => {
+                    if (cb.checked) checkedCount++;
+                });
+                
+                const oldProgress = project.progress;
+                const oldStatus = project.status;
+                
+                project.progress = checkedCount * 10;
+                
+                // 시작일 자동 설정
+                if (project.progress > 0 && !project.startDate) {
+                    project.startDate = new Date().toISOString().split('T')[0];
+                }
+                
+                // 상태 자동 변경
+                if (project.progress === 100) {
+                    project.status = 'done';
+                } else if (project.progress > 0) {
+                    project.status = 'in-progress';
+                } else {
+                    project.status = 'not-started';
+                }
+                
+                // 변경사항이 있을 때만 새로고침
+                if (oldProgress !== project.progress || oldStatus !== project.status) {
+                    renderAllViews();
+                    showNotification(`${project.title} 진행률: ${project.progress}%`);
+                }
+            }
+        }
+
+        // 프로젝트 관리 함수들
+        function deleteProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+            
+            if (confirm(`"${project.title}" 프로젝트를 삭제하시겠습니까?`)) {
+                projects = projects.filter(p => p.id !== id);
+                renderAllViews();
+                showNotification('프로젝트가 삭제되었습니다.');
+            }
+        }
+
+        function renderAllViews() {
+            renderTrack();
+            renderTimeline();
+            renderTable();
+            renderEdit();
+        }
+
+        function clearAll() {
+            if (confirm('모든 프로젝트를 삭제하시겠습니까?')) {
+                projects = [];
+                renderAllViews();
+                showNotification('모든 프로젝트가 삭제되었습니다.');
+            }
+        }
+
+        function saveData() {
+            showNotification('데이터가 저장되었습니다!');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(projects, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kanban-sprint-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('데이터가 내보내졌습니다!');
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllViews();
+        });
+        
+        renderAllViews();
+    </script>
+</body>
+</html>
