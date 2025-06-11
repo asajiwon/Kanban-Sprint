@@ -47,6 +47,38 @@
             background: #e2e8f0;
         }
 
+        /* Firebase 상태 표시기 */
+        .firebase-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .firebase-status.connected {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .firebase-status.offline {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .firebase-status.loading {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
         /* 사이드바 */
         .sidebar {
             position: fixed;
@@ -790,6 +822,12 @@
         <button class="nav-toggle" onclick="toggleSidebar()">☰</button>
     </div>
 
+    <!-- Firebase 상태 표시기 -->
+    <div id="firebase-status" class="firebase-status loading">
+        <span class="status-icon">⏳</span>
+        <span class="status-text">연결 중...</span>
+    </div>
+
     <!-- 사이드바 -->
     <div class="sidebar" id="sidebar">
         <div class="nav-item active" onclick="showView('track')">
@@ -864,6 +902,7 @@
                 <button class="btn" onclick="clearAll()">🗑️ 전체 삭제</button>
                 <button class="btn" onclick="saveToFirebase()">☁️ 수동 저장</button>
                 <button class="btn" onclick="exportData()">📤 내보내기</button>
+                <button class="btn" onclick="importData()">📥 가져오기</button>
             </div>
             
             <div class="board">
@@ -992,12 +1031,15 @@
         </div>
     </div>
 
-    <!-- Firebase SDK (안정적인 CDN) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-app.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-firestore.min.js"></script>
+    <!-- 파일 입력 (숨김) -->
+    <input type="file" id="file-input" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+
+    <!-- Firebase SDK v9 CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <script>
-        // Firebase 초기화
+        // Firebase 설정 및 초기화
         const firebaseConfig = {
             apiKey: "AIzaSyDx6UqoMMyo-JexUkWfXs7W_cz7rsUIl04",
             authDomain: "kanban-sprint.firebaseapp.com",
@@ -1008,67 +1050,9 @@
             measurementId: "G-0FER7QK4X7"
         };
 
+        // 전역 변수들
         let db = null;
         let isFirebaseReady = false;
-        let firebaseAttempts = 0;
-        const maxAttempts = 30; // 3초 대기
-
-        // Firebase 초기화 함수
-        function initFirebase() {
-            try {
-                if (typeof firebase !== 'undefined' && firebase.app) {
-                    firebase.initializeApp(firebaseConfig);
-                    db = firebase.firestore();
-                    isFirebaseReady = true;
-                    console.log('✅ Firebase 초기화 성공');
-                    showNotification('🔥 Firebase 연결됨');
-                    
-                    // 초기화 성공 후 데이터 로드
-                    loadFromFirebase();
-                    return true;
-                } else {
-                    throw new Error('Firebase SDK가 완전히 로드되지 않음');
-                }
-            } catch (error) {
-                console.error('❌ Firebase 초기화 실패:', error);
-                isFirebaseReady = false;
-                showNotification('⚠️ 오프라인 모드로 시작');
-                
-                // Firebase 실패 시 기본 렌더링
-                renderAllViews();
-                return false;
-            }
-        }
-
-        // Firebase SDK 로딩 대기 (개선된 버전)
-        function waitForFirebase() {
-            firebaseAttempts++;
-            
-            if (typeof firebase !== 'undefined' && firebase.app) {
-                console.log(`✅ Firebase SDK 로드됨 (${firebaseAttempts}번째 시도)`);
-                initFirebase();
-            } else if (firebaseAttempts >= maxAttempts) {
-                console.log('⏰ Firebase SDK 로딩 타임아웃 - 오프라인 모드');
-                isFirebaseReady = false;
-                showNotification('⚠️ 네트워크 오류 - 오프라인 모드');
-                renderAllViews();
-            } else {
-                console.log(`⏳ Firebase SDK 대기 중... (${firebaseAttempts}/${maxAttempts})`);
-                setTimeout(waitForFirebase, 100);
-            }
-        }
-
-        // Firebase 없이도 작동하는 기본 함수들
-        function showNotificationSafe(message) {
-            try {
-                showNotification(message);
-            } catch (e) {
-                console.log('알림:', message);
-            }
-        }
-    </script>
-
-    <script>
         let projects = [
             {
                 "id": 1,
@@ -1260,43 +1244,98 @@
         let currentDetailProject = null;
         let projectToDelete = null;
 
-        // Firebase 데이터 관리 함수들
+        // Firebase 초기화
+        function initFirebase() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                isFirebaseReady = true;
+                console.log('✅ Firebase 초기화 성공');
+                updateFirebaseStatus('connected');
+                loadFromFirebase();
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+                isFirebaseReady = false;
+                updateFirebaseStatus('offline');
+                showNotification('⚠️ 오프라인 모드로 시작');
+                renderAllViews();
+            }
+        }
+
+        // Firebase 상태 업데이트
+        function updateFirebaseStatus(status) {
+            const statusEl = document.getElementById('firebase-status');
+            if (!statusEl) return;
+            
+            statusEl.className = 'firebase-status ' + status;
+            const statusText = statusEl.querySelector('.status-text');
+            const statusIcon = statusEl.querySelector('.status-icon');
+            
+            switch(status) {
+                case 'connected':
+                    statusIcon.textContent = '✅';
+                    statusText.textContent = 'Firebase 연결됨';
+                    break;
+                case 'offline':
+                    statusIcon.textContent = '🔴';
+                    statusText.textContent = '오프라인 모드';
+                    break;
+                case 'loading':
+                    statusIcon.textContent = '⏳';
+                    statusText.textContent = '연결 중...';
+                    break;
+            }
+        }
+
+        // Firebase 저장
         async function saveToFirebase() {
             if (!isFirebaseReady || !db) {
                 console.log('Firebase 사용 불가 - 오프라인 모드');
-                showNotification('오프라인 모드 - 로컬에서만 저장됨');
+                showNotification('⚠️ 오프라인 모드 - 로컬에서만 저장됨');
                 return;
             }
 
             try {
-                // 기존 프로젝트들 삭제 (전체 교체 방식)
-                const querySnapshot = await db.collection('projects').get();
-                const deletePromises = querySnapshot.docs.map(doc => doc.ref.delete());
-                await Promise.all(deletePromises);
-
-                // 새 프로젝트들 저장
-                const savePromises = projects.map(project => 
-                    db.collection('projects').add(project)
-                );
-                await Promise.all(savePromises);
+                updateFirebaseStatus('loading');
                 
-                console.log('Firebase에 저장 완료');
+                // 기존 문서들 삭제
+                const querySnapshot = await db.collection('projects').get();
+                const batch = db.batch();
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                
+                // 새 프로젝트들 저장
+                const saveBatch = db.batch();
+                projects.forEach((project, index) => {
+                    const docRef = db.collection('projects').doc(String(project.id));
+                    saveBatch.set(docRef, project);
+                });
+                await saveBatch.commit();
+                
+                console.log('✅ Firebase 저장 완료');
+                updateFirebaseStatus('connected');
                 showNotification('✅ 클라우드에 저장 완료!');
             } catch (error) {
-                console.error('Firebase 저장 실패:', error);
-                showNotification('❌ 저장 실패 - 오프라인 모드');
+                console.error('❌ Firebase 저장 실패:', error);
+                updateFirebaseStatus('offline');
+                showNotification(`❌ 저장 실패: ${error.message}`);
             }
         }
 
+        // Firebase에서 불러오기
         async function loadFromFirebase() {
             if (!isFirebaseReady || !db) {
                 console.log('Firebase 사용 불가 - 기본 데이터 사용');
-                showNotification('오프라인 모드로 시작');
+                updateFirebaseStatus('offline');
                 renderAllViews();
                 return;
             }
 
             try {
+                updateFirebaseStatus('loading');
+                
                 const querySnapshot = await db.collection('projects').get();
                 const firebaseProjects = [];
                 
@@ -1306,36 +1345,35 @@
 
                 if (firebaseProjects.length > 0) {
                     projects = firebaseProjects;
-                    nextId = Math.max(...projects.map(p => p.id), 0) + 1;
-                    console.log('Firebase에서 데이터 불러옴:', projects.length, '개 프로젝트');
+                    nextId = Math.max(...projects.map(p => p.id || 0), 0) + 1;
+                    console.log(`✅ Firebase에서 ${projects.length}개 프로젝트 로드`);
+                    updateFirebaseStatus('connected');
                     showNotification(`📥 ${projects.length}개 프로젝트 로드됨`);
                 } else {
-                    console.log('Firebase에 데이터가 없음, 기본 데이터 사용');
-                    // 기본 데이터를 Firebase에 저장
+                    console.log('Firebase에 데이터 없음 - 기본 데이터로 초기화');
                     await saveToFirebase();
                 }
                 
                 renderAllViews();
             } catch (error) {
-                console.error('Firebase 로드 실패:', error);
-                console.log('오프라인 모드: 기본 데이터 사용');
-                showNotification('⚠️ 오프라인 모드로 시작');
+                console.error('❌ Firebase 로드 실패:', error);
+                updateFirebaseStatus('offline');
+                showNotification(`⚠️ 로드 실패: ${error.message}`);
                 renderAllViews();
             }
         }
 
-        // 자동 저장 함수 (변경사항이 있을 때마다 호출)
+        // 자동 저장
         function autoSave() {
             if (!isFirebaseReady) {
                 console.log('Firebase 비활성화 - 자동저장 건너뜀');
                 return;
             }
             
-            // 디바운스: 연속 호출 방지
             clearTimeout(autoSave.timeout);
             autoSave.timeout = setTimeout(() => {
                 saveToFirebase();
-            }, 2000); // 2초 후 저장 (더 안정적)
+            }, 2000);
         }
 
         // 기본 함수들
@@ -1363,7 +1401,6 @@
         }
 
         function showNotification(message) {
-            // 간단한 알림 표시
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
@@ -1381,7 +1418,6 @@
                 animation: slideIn 0.3s ease;
             `;
             
-            // 오류 메시지면 빨간색으로
             if (message.includes('❌') || message.includes('⚠️')) {
                 notification.style.background = 'linear-gradient(135deg, #dc2626, #b91c1c)';
             }
@@ -1390,14 +1426,12 @@
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.style.animation = 'slideOut 0.3s ease';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 300);
-                }
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
             }, 3000);
         }
 
@@ -1478,7 +1512,6 @@
             }
         }
 
-        // 간트 차트 타임라인 렌더링 함수들
         function renderTimeline() {
             const container = document.getElementById('timeline-content');
             container.innerHTML = '';
@@ -1604,82 +1637,6 @@
             return bar;
         }
 
-        // 보기 전용 상세 모달 (메인 페이지용)
-        function showProjectInfoModal(projectId) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            currentDetailProject = project;
-            
-            document.getElementById('detail-project-title').textContent = project.title;
-            
-            const detailInfo = document.getElementById('detail-info');
-            detailInfo.innerHTML = `
-                <div class="info-item">
-                    <div class="info-label">상태</div>
-                    <div class="info-value">
-                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">착수일</div>
-                    <div class="info-value">${project.startDate || '미정'}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">마감일</div>
-                    <div class="info-value">${project.dueDate}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">태스크 완료</div>
-                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
-                </div>
-            `;
-            
-            updateDetailProgress(project.progress);
-            
-            setTimeout(() => {
-                const progressSection = document.querySelector('#detail-modal .section-title');
-                if (progressSection && progressSection.textContent.includes('진행률')) {
-                    progressSection.innerHTML = '📊 진행률';
-                }
-            }, 10);
-            
-            const checkboxContainer = document.getElementById('detail-checkboxes');
-            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
-            
-            const tasksContainer = document.getElementById('detail-tasks');
-            let tasksHtml = '';
-            
-            project.tasks.forEach(task => {
-                tasksHtml += `
-                    <div class="task-item ${task.completed ? 'completed' : ''}">
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
-                        <div class="task-text">${task.text}</div>
-                    </div>
-                `;
-            });
-            
-            tasksContainer.innerHTML = tasksHtml;
-            
-            document.getElementById('detail-modal').classList.add('show');
-            
-            const newTaskInput = document.getElementById('new-task-input');
-            newTaskInput.style.display = 'none';
-            
-            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
-            buttonArea.innerHTML = '';
-            buttonArea.style.display = 'block';
-            buttonArea.style.marginTop = '25px';
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'btn';
-            closeBtn.style.width = '100%';
-            closeBtn.textContent = '닫기';
-            closeBtn.onclick = function() { hideDetailModal(); };
-            
-            buttonArea.appendChild(closeBtn);
-        }
-
         function renderEdit() {
             ['not-started', 'in-progress', 'done'].forEach(status => {
                 const container = document.getElementById(status);
@@ -1794,13 +1751,81 @@
                 
                 if (oldProgress !== project.progress || oldStatus !== project.status) {
                     renderAllViews();
-                    autoSave(); // 자동 저장
+                    autoSave();
                     showNotification(`${project.title} 진행률: ${project.progress}%`);
                 }
             }
         }
 
-        // 프로젝트 추가 모달 관련 함수들
+        // 모달 관련 함수들
+        function showProjectInfoModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            document.getElementById('detail-project-title').textContent = project.title;
+            
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <div class="info-value">
+                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <div class="info-value">${project.startDate || '미정'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <div class="info-value">${project.dueDate}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">태스크 완료</div>
+                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            let tasksHtml = '';
+            
+            project.tasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+                        <div class="task-text">${task.text}</div>
+                    </div>
+                `;
+            });
+            
+            tasksContainer.innerHTML = tasksHtml;
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'none';
+            
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'block';
+            buttonArea.style.marginTop = '25px';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn';
+            closeBtn.style.width = '100%';
+            closeBtn.textContent = '닫기';
+            closeBtn.onclick = function() { hideDetailModal(); };
+            
+            buttonArea.appendChild(closeBtn);
+        }
+
         function showAddModal() {
             document.getElementById('add-modal').classList.add('show');
             document.getElementById('add-project-title').value = '';
@@ -1887,12 +1912,11 @@
             
             projects.push(newProject);
             renderAllViews();
-            autoSave(); // 자동 저장
+            autoSave();
             hideAddModal();
             showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
         }
 
-        // 디테일 모달 함수들 (편집 탭용)
         function showDetailModal(projectId) {
             const project = projects.find(p => p.id === projectId);
             if (!project) return;
@@ -2001,7 +2025,6 @@
             else currentDetailProject.status = 'not-started';
             
             updateDetailProgress(newProgress);
-            showDetailModal(currentDetailProject.id);
         }
 
         function renderDetailTasks() {
@@ -2102,7 +2125,7 @@
             currentDetailProject.dueDate = newDueDate;
             
             renderAllViews();
-            autoSave(); // 자동 저장
+            autoSave();
             showNotification('프로젝트 정보가 저장되었습니다!');
             hideDetailModal();
         }
@@ -2113,16 +2136,8 @@
             projectToDelete = currentDetailProject;
             document.getElementById('confirm-message').textContent = `"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`;
             document.getElementById('confirm-modal').classList.add('show');
-            
-            const originalConfirmDelete = window.confirmDelete;
-            window.confirmDelete = function() {
-                originalConfirmDelete();
-                hideDetailModal();
-                window.confirmDelete = originalConfirmDelete;
-            };
         }
 
-        // 프로젝트 관리 함수들
         function deleteProject(id) {
             const project = projects.find(p => p.id === id);
             if (!project) return;
@@ -2138,10 +2153,13 @@
             projects = projects.filter(p => p.id !== projectToDelete.id);
             
             document.getElementById('confirm-modal').classList.remove('show');
+            if (document.getElementById('detail-modal').classList.contains('show')) {
+                hideDetailModal();
+            }
             projectToDelete = null;
             
             renderAllViews();
-            autoSave(); // 자동 저장
+            autoSave();
             showNotification('프로젝트가 삭제되었습니다.');
         }
 
@@ -2162,7 +2180,7 @@
                 projects = [];
                 nextId = 1;
                 renderAllViews();
-                autoSave(); // 자동 저장
+                autoSave();
                 showNotification('모든 프로젝트가 삭제되었습니다.');
             }
         }
@@ -2183,14 +2201,40 @@
             showNotification('데이터가 내보내졌습니다!');
         }
 
+        function importData() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedProjects = JSON.parse(e.target.result);
+                    if (Array.isArray(importedProjects)) {
+                        projects = importedProjects;
+                        nextId = Math.max(...projects.map(p => p.id || 0), 0) + 1;
+                        renderAllViews();
+                        autoSave();
+                        showNotification(`${importedProjects.length}개 프로젝트를 가져왔습니다!`);
+                    } else {
+                        alert('올바른 프로젝트 데이터 형식이 아닙니다.');
+                    }
+                } catch (error) {
+                    alert('파일을 읽는 중 오류가 발생했습니다.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            // Firebase SDK 로딩 대기 후 초기화
-            waitForFirebase();
+            initFirebase();
         });
-        
-        // 페이지 로드 시 즉시 Firebase 대기 시작
-        waitForFirebase();
     </script>
 </body>
 </html>
