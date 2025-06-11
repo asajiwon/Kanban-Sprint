@@ -416,7 +416,8 @@
                         cell.appendChild(projectBar);
                     }
                     
-                    if (month === currentMonth) {
+                    // 오늘 표시 (6-8월 범위 내에서만)
+                    if (month === currentMonth && currentMonth >= 6 && currentMonth <= 8) {
                         const todayLine = document.createElement('div');
                         todayLine.className = 'gantt-today-line';
                         const dayPercentage = (currentDay / 31) * 100;
@@ -445,6 +446,12 @@
             const startMonth = startDate.getMonth() + 1;
             const endMonth = endDate.getMonth() + 1;
             
+            // 6-8월 범위에 없으면 null 반환
+            if (month < 6 || month > 8) {
+                return null;
+            }
+            
+            // 이 월에 프로젝트가 없으면 null 반환
             if (month < startMonth || month > endMonth) {
                 return null;
             }
