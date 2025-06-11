@@ -1,1107 +1,4 @@
-<!-- 확인 모달 -->
-    <div id="confirm-modal" class="detail-modal">
-        <div class="detail-content" style="max-width: 400px;">
-            <div class="detail-header">
-                <div class="detail-title">🗑️ 프로젝트 삭제</div>
-            </div>
-            <div style="padding: 20px 0; text-align: center;">
-                <div id="confirm-message" style="font-size: 16px; color: #1e293b; margin-bottom: 20px;"></div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-cancel" style="flex: 1;" onclick="cancelDelete()">취소</button>
-                    <button class="btn" style="flex: 1; background: linear-gradient(135deg, #dc2626, #b91c1c);" onclick="confirmDelete()">삭제</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let projects = [
-            {
-                "id": 1,
-                "title": "PBI - Transportation Daily",
-                "status": "in-progress",
-                "progress": 70,
-                "startDate": "2025-06-01",
-                "dueDate": "2025-06-13",
-                "tasks": [
-                    {"id": 1, "text": "디자인 시안 작성", "completed": true},
-                    {"id": 2, "text": "프론트엔드 개발", "completed": true},
-                    {"id": 3, "text": "백엔드 API 연동", "completed": true},
-                    {"id": 4, "text": "테스트 및 배포", "completed": false}
-                ]
-            },
-            {
-                "id": 2,
-                "title": "PBI - People Network Productivity",
-                "status": "not-started",
-                "progress": 0,
-                "startDate": "2025-06-30",
-                "dueDate": "2025-07-08",
-                "tasks": [
-                    {"id": 1, "text": "요구사항 분석", "completed": false},
-                    {"id": 2, "text": "UI/UX 디자인", "completed": false},
-                    {"id": 3, "text": "개발 및 테스트", "completed": false}
-                ]
-            },
-            {
-                "id": 3,
-                "title": "업무 자동화 워크샵",
-                "status": "done",
-                "progress": 100,
-                "startDate": "2025-06-04",
-                "dueDate": "2025-06-10",
-                "tasks": [
-                    {"id": 1, "text": "성능 분석", "completed": true},
-                    {"id": 2, "text": "쿼리 최적화", "completed": true},
-                    {"id": 3, "text": "인덱스 재구성", "completed": true},
-                    {"id": 4, "text": "결과 검증", "completed": true}
-                ]
-            },
-            {
-                "id": 4,
-                "title": "PBI - Direct Delivery",
-                "status": "in-progress",
-                "progress": 40,
-                "startDate": "2025-06-01",
-                "dueDate": "2025-06-13",
-                "tasks": [
-                    {"id": 1, "text": "타겟 고객 분석", "completed": true},
-                    {"id": 2, "text": "콘텐츠 제작", "completed": true},
-                    {"id": 3, "text": "광고 집행", "completed": false},
-                    {"id": 4, "text": "성과 측정", "completed": false},
-                    {"id": 5, "text": "결과 보고서", "completed": false}
-                ]
-            },
-            {
-                "id": 5,
-                "title": "WMS 배치 조회 프로그램",
-                "status": "done",
-                "progress": 100,
-                "startDate": "2025-05-10",
-                "dueDate": "2025-05-30",
-                "tasks": [
-                    {"id": 1, "text": "API 설계", "completed": true},
-                    {"id": 2, "text": "개발", "completed": true},
-                    {"id": 3, "text": "테스트", "completed": true}
-                ]
-            },
-            {
-                "id": 6,
-                "title": "PBI - Load Schedule",
-                "status": "in-progress",
-                "progress": 60,
-                "startDate": "2025-06-01",
-                "dueDate": "2025-06-13",
-                "tasks": [
-                    {"id": 1, "text": "보안 감사", "completed": true},
-                    {"id": 2, "text": "취약점 수정", "completed": false}
-                ]
-            },
-            {
-                "id": 7,
-                "title": "PBI - Truck Turnover",
-                "status": "in-progress",
-                "progress": 10,
-                "startDate": "2025-06-01",
-                "dueDate": "2025-06-13",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 8,
-                "title": "PBI - Route Efficiency",
-                "status": "in-progress",
-                "progress": 10,
-                "startDate": "2025-06-01",
-                "dueDate": "2025-06-13",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 9,
-                "title": "공장 재고 시각화",
-                "status": "not-started",
-                "progress": 0,
-                "startDate": "2025-07-09",
-                "dueDate": "2025-07-15",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 10,
-                "title": "배차 프로세스 최적화",
-                "status": "not-started",
-                "progress": 0,
-                "startDate": "2025-06-17",
-                "dueDate": "2025-06-27",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 11,
-                "title": "PBI - Weight Performance",
-                "status": "in-progress",
-                "progress": 10,
-                "startDate": "2025-06-01",
-                "dueDate": "2025-06-13",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 12,
-                "title": "운송 KPI 대시보드 전체 병합",
-                "status": "not-started",
-                "progress": 0,
-                "startDate": "2025-07-17",
-                "dueDate": "2025-07-17",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 13,
-                "title": "공장 재고 분석",
-                "status": "not-started",
-                "progress": 0,
-                "startDate": "2025-06-16",
-                "dueDate": "2025-06-17",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            },
-            {
-                "id": 14,
-                "title": "운송 PBI 데이터 소스 변경",
-                "status": "not-started",
-                "progress": 0,
-                "startDate": "2025-07-18",
-                "dueDate": "2025-07-18",
-                "tasks": [
-                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
-                    {"id": 2, "text": "리소스 준비", "completed": false},
-                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
-                ]
-            }
-        ];
-        let nextId = 15;
-        let currentDetailProject = null;
-
-        // 브라우저 저장소 관리 (GitHub Pages 호환)
-        function saveToStorage() {
-            try {
-                // localStorage 사용 가능한지 확인
-                if (typeof(Storage) !== "undefined" && window.localStorage) {
-                    localStorage.setItem('kanban-sprint-projects', JSON.stringify(projects));
-                    localStorage.setItem('kanban-sprint-nextId', nextId.toString());
-                    console.log('데이터가 로컬 저장소에 저장되었습니다.');
-                } else {
-                    // localStorage 사용 불가능한 경우 세션 메모리에만 유지
-                    console.log('로컬 저장소를 사용할 수 없습니다. 세션 중에만 데이터가 유지됩니다.');
-                }
-            } catch (error) {
-                console.log('저장소 사용 불가:', error.message);
-                // 오류가 발생해도 앱은 계속 작동
-            }
-        }
-
-        function loadFromStorage() {
-            try {
-                if (typeof(Storage) !== "undefined" && window.localStorage) {
-                    const savedProjects = localStorage.getItem('kanban-sprint-projects');
-                    const savedNextId = localStorage.getItem('kanban-sprint-nextId');
-                    
-                    if (savedProjects) {
-                        const parsedProjects = JSON.parse(savedProjects);
-                        if (parsedProjects && parsedProjects.length > 0) {
-                            projects = parsedProjects;
-                            console.log('프로젝트 데이터가 불러와졌습니다.');
-                        }
-                    }
-                    
-                    if (savedNextId) {
-                        nextId = parseInt(savedNextId);
-                        console.log('NextId가 불러와졌습니다.');
-                    }
-                }
-            } catch (error) {
-                console.log('저장소에서 불러오기 실패:', error.message);
-                // 오류가 발생해도 기본 데이터로 계속 진행
-            }
-        }
-
-        function clearStorage() {
-            try {
-                if (typeof(Storage) !== "undefined" && window.localStorage) {
-                    localStorage.removeItem('kanban-sprint-projects');
-                    localStorage.removeItem('kanban-sprint-nextId');
-                    console.log('저장소가 초기화되었습니다.');
-                }
-            } catch (error) {
-                console.log('저장소 초기화 실패:', error.message);
-            }
-        }
-
-        // 기본 함수들
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('expanded');
-        }
-
-        function showView(viewName) {
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.nav-item').classList.add('active');
-
-            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-            document.getElementById(viewName + '-view').classList.add('active');
-            
-            if (viewName === 'track') renderTrack();
-            else if (viewName === 'timeline') renderTimeline();
-            else if (viewName === 'table') renderTable();
-            else if (viewName === 'edit') renderEdit();
-        }
-
-        function getStatusText(status) {
-            const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
-            return map[status] || status;
-        }
-
-        function showNotification(message) {
-            // 알림 기능 제거됨 - 아무것도 하지 않음
-            console.log('알림:', message);
-        }
-
-        // 렌더링 함수들
-        function renderTrack() {
-            const container = document.getElementById('runners-container');
-            container.innerHTML = '';
-
-            const activeProjects = projects.filter(p => p.status !== 'done').sort((a, b) => b.progress - a.progress);
-
-            activeProjects.forEach((project, index) => {
-                const runner = document.createElement('div');
-                runner.className = `runner status-${project.status}`;
-                runner.style.cursor = 'pointer';
-                
-                const runnerIcons = ['🏃‍♂️', '🏃‍♀️', '🚀', '⚡'];
-                const icon = runnerIcons[index % runnerIcons.length];
-                
-                runner.innerHTML = `
-                    <div class="runner-icon">${icon}</div>
-                    <div class="runner-info">
-                        <div class="runner-name">${project.title}</div>
-                        <div class="runner-progress">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: ${project.progress}%"></div>
-                            </div>
-                            <div class="progress-percentage">${project.progress}%</div>
-                        </div>
-                        <div class="runner-meta">
-                            <span>🚀 ${project.startDate || '미정'}</span>
-                            <span>📅 ${project.dueDate}</span>
-                            <span class="status ${project.status}">${getStatusText(project.status)}</span>
-                        </div>
-                    </div>
-                `;
-                
-                runner.onclick = function() { showProjectInfoModal(project.id); };
-                container.appendChild(runner);
-            });
-
-            if (activeProjects.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
-            }
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            const allProjects = [...projects].sort((a, b) => {
-                return new Date(a.dueDate) - new Date(b.dueDate);
-            });
-
-            allProjects.forEach(project => {
-                const row = document.createElement('tr');
-                row.style.cursor = 'pointer';
-                row.innerHTML = `
-                    <td><strong>${project.title}</strong></td>
-                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="progress-track" style="flex: 1; height: 6px;">
-                                <div class="progress-fill" style="width: ${project.progress}%"></div>
-                            </div>
-                            <strong>${project.progress}%</strong>
-                        </div>
-                    </td>
-                    <td>${project.startDate || '미정'}</td>
-                    <td>${project.dueDate}</td>
-                `;
-                
-                row.onclick = function() { showProjectInfoModal(project.id); };
-                tbody.appendChild(row);
-            });
-
-            if (allProjects.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">프로젝트가 없습니다!</td></tr>';
-            }
-        }
-
-        // 간트 차트 타임라인 렌더링 함수들
-        function renderTimeline() {
-            const container = document.getElementById('timeline-content');
-            container.innerHTML = '';
-            
-            const ganttChart = document.createElement('div');
-            ganttChart.className = 'gantt-chart';
-            
-            const ganttHeader = document.createElement('div');
-            ganttHeader.className = 'gantt-header';
-            
-            const months = ['프로젝트', '6월', '7월', '8월'];
-            months.forEach(month => {
-                const cell = document.createElement('div');
-                cell.className = 'gantt-header-cell';
-                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2025</div>`;
-                ganttHeader.appendChild(cell);
-            });
-            
-            ganttChart.appendChild(ganttHeader);
-            
-            const ganttBody = document.createElement('div');
-            ganttBody.className = 'gantt-body';
-            
-            const today = new Date();
-            const currentMonth = today.getMonth() + 1;
-            const currentDay = today.getDate();
-            
-            projects.forEach(project => {
-                const row = document.createElement('div');
-                row.className = 'gantt-row';
-                
-                const nameCell = document.createElement('div');
-                nameCell.className = 'gantt-cell gantt-project-name';
-                nameCell.innerHTML = `
-                    <span class="status ${project.status}" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
-                    ${project.title}
-                `;
-                nameCell.onclick = function() { showProjectInfoModal(project.id); };
-                row.appendChild(nameCell);
-                
-                for (let month = 3; month <= 8; month++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'gantt-cell';
-                    
-                    const projectBar = createProjectBar(project, month);
-                    if (projectBar) {
-                        cell.appendChild(projectBar);
-                    }
-                    
-                    // 오늘 표시 (6-8월 범위 내에서만)
-                    if (month === currentMonth && currentMonth >= 6 && currentMonth <= 8) {
-                        const todayLine = document.createElement('div');
-                        todayLine.className = 'gantt-today-line';
-                        const dayPercentage = (currentDay / 31) * 100;
-                        todayLine.style.left = `${dayPercentage}%`;
-                        
-                        const todayMarker = document.createElement('div');
-                        todayMarker.className = 'gantt-today-marker';
-                        todayLine.appendChild(todayMarker);
-                        
-                        cell.appendChild(todayLine);
-                    }
-                    
-                    row.appendChild(cell);
-                }
-                
-                ganttBody.appendChild(row);
-            });
-            
-            ganttChart.appendChild(ganttBody);
-            container.appendChild(ganttChart);
-        }
-
-        function createProjectBar(project, month) {
-            const startDate = new Date(project.startDate);
-            const endDate = new Date(project.dueDate);
-            const startMonth = startDate.getMonth() + 1;
-            const endMonth = endDate.getMonth() + 1;
-            
-            // 6-8월 범위에 없으면 null 반환
-            if (month < 6 || month > 8) {
-                return null;
-            }
-            
-            // 이 월에 프로젝트가 없으면 null 반환
-            if (month < startMonth || month > endMonth) {
-                return null;
-            }
-            
-            const bar = document.createElement('div');
-            bar.className = `gantt-bar ${project.status}`;
-            
-            let left = 0;
-            let width = 100;
-            
-            if (month === startMonth && month === endMonth) {
-                const startDay = startDate.getDate();
-                const endDay = endDate.getDate();
-                const daysInMonth = new Date(2025, month, 0).getDate();
-                
-                left = (startDay / daysInMonth) * 100;
-                width = ((endDay - startDay + 1) / daysInMonth) * 100;
-            } else if (month === startMonth) {
-                const startDay = startDate.getDate();
-                const daysInMonth = new Date(2025, month, 0).getDate();
-                left = (startDay / daysInMonth) * 100;
-                width = ((daysInMonth - startDay + 1) / daysInMonth) * 100;
-            } else if (month === endMonth) {
-                const endDay = endDate.getDate();
-                const daysInMonth = new Date(2025, month, 0).getDate();
-                width = (endDay / daysInMonth) * 100;
-            }
-            
-            bar.style.left = `${left}%`;
-            bar.style.width = `${width}%`;
-            
-            if (month === startMonth) {
-                bar.textContent = `${project.progress}%`;
-            }
-            
-            bar.onclick = function(e) {
-                e.stopPropagation();
-                showProjectInfoModal(project.id);
-            };
-            
-            return bar;
-        }
-
-        // 보기 전용 상세 모달 (메인 페이지용)
-        function showProjectInfoModal(projectId) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            currentDetailProject = project;
-            
-            document.getElementById('detail-project-title').textContent = project.title;
-            
-            const detailInfo = document.getElementById('detail-info');
-            detailInfo.innerHTML = `
-                <div class="info-item">
-                    <div class="info-label">상태</div>
-                    <div class="info-value">
-                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">착수일</div>
-                    <div class="info-value">${project.startDate || '미정'}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">마감일</div>
-                    <div class="info-value">${project.dueDate}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">태스크 완료</div>
-                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
-                </div>
-            `;
-            
-            updateDetailProgress(project.progress);
-            
-            setTimeout(() => {
-                const progressSection = document.querySelector('#detail-modal .section-title');
-                if (progressSection && progressSection.textContent.includes('진행률')) {
-                    progressSection.innerHTML = '📊 진행률';
-                }
-            }, 10);
-            
-            const checkboxContainer = document.getElementById('detail-checkboxes');
-            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
-            
-            const tasksContainer = document.getElementById('detail-tasks');
-            let tasksHtml = '';
-            
-            project.tasks.forEach(task => {
-                tasksHtml += `
-                    <div class="task-item ${task.completed ? 'completed' : ''}">
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
-                        <div class="task-text">${task.text}</div>
-                    </div>
-                `;
-            });
-            
-            tasksContainer.innerHTML = tasksHtml;
-            
-            document.getElementById('detail-modal').classList.add('show');
-            
-            const newTaskInput = document.getElementById('new-task-input');
-            newTaskInput.style.display = 'none';
-            
-            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
-            buttonArea.innerHTML = '';
-            buttonArea.style.display = 'block';
-            buttonArea.style.marginTop = '25px';
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'btn';
-            closeBtn.style.width = '100%';
-            closeBtn.textContent = '닫기';
-            closeBtn.onclick = function() { hideDetailModal(); };
-            
-            buttonArea.appendChild(closeBtn);
-        }
-
-        function renderEdit() {
-            ['not-started', 'in-progress', 'done'].forEach(status => {
-                const container = document.getElementById(status);
-                container.innerHTML = '';
-                
-                projects.filter(p => p.status === status).forEach(project => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.cursor = 'pointer';
-                    
-                    let checkboxes = '';
-                    for (let i = 0; i < 10; i++) {
-                        const checked = (project.progress / 10) > i ? 'checked' : '';
-                        checkboxes += `<input type="checkbox" ${checked}>`;
-                    }
-                    
-                    card.innerHTML = `
-                        <div class="card-title">${project.title}</div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
-                            <span>🚀 ${project.startDate || '미정'}</span>
-                            <span>📅 ${project.dueDate}</span>
-                        </div>
-                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
-                            진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
-                        </div>
-                        <div class="checkboxes">${checkboxes}</div>
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width: ${project.progress}%"></div>
-                        </div>
-                        <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;">
-                        </div>
-                    `;
-                    
-                    card.addEventListener('click', (e) => {
-                        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
-                            return;
-                        }
-                        showDetailModal(project.id);
-                    });
-                    
-                    const buttonContainer = card.querySelector('.button-container');
-                    
-                    const editBtn = document.createElement('button');
-                    editBtn.textContent = '✏️ 편집';
-                    editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showDetailModal(project.id);
-                    });
-                    
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.textContent = '🗑️ 삭제';
-                    deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        console.log('삭제 버튼 클릭됨, 프로젝트 ID:', project.id);
-                        deleteProject(project.id);
-                    });
-                    
-                    buttonContainer.appendChild(editBtn);
-                    buttonContainer.appendChild(deleteBtn);
-                    
-                    const checkboxElements = card.querySelectorAll('.checkboxes input[type="checkbox"]');
-                    checkboxElements.forEach((checkbox, index) => {
-                        checkbox.addEventListener('change', (e) => {
-                            e.stopPropagation();
-                            updateProgressFromCheckbox(project.id, index, checkbox.checked);
-                        });
-                    });
-                    
-                    container.appendChild(card);
-                });
-            });
-        }
-
-        function updateProgressFromCheckbox(projectId, checkboxIndex, isChecked) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            let targetCard = null;
-            
-            document.querySelectorAll('.card').forEach(card => {
-                const titleElement = card.querySelector('.card-title');
-                if (titleElement && titleElement.textContent === project.title) {
-                    targetCard = card;
-                }
-            });
-            
-            if (targetCard) {
-                const checkboxes = targetCard.querySelectorAll('.checkboxes input[type="checkbox"]');
-                let checkedCount = 0;
-                
-                checkboxes.forEach(cb => {
-                    if (cb.checked) checkedCount++;
-                });
-                
-                const oldProgress = project.progress;
-                const oldStatus = project.status;
-                
-                project.progress = checkedCount * 10;
-                
-                if (project.progress > 0 && !project.startDate) {
-                    project.startDate = new Date().toISOString().split('T')[0];
-                }
-                
-                if (project.progress === 100) {
-                    project.status = 'done';
-                } else if (project.progress > 0) {
-                    project.status = 'in-progress';
-                } else {
-                    project.status = 'not-started';
-                }
-                
-                if (oldProgress !== project.progress || oldStatus !== project.status) {
-                    renderAllViews();
-                    showNotification(`${project.title} 진행률: ${project.progress}%`);
-                }
-            }
-        }
-
-        // 프로젝트 추가 모달 관련 함수들
-        function showAddModal() {
-            document.getElementById('add-modal').classList.add('show');
-            document.getElementById('add-project-title').value = '';
-            document.getElementById('add-project-start').value = '';
-            document.getElementById('add-project-due').value = '';
-            
-            const initialTaskInputs = document.querySelectorAll('#initial-tasks input');
-            initialTaskInputs.forEach(input => input.value = '');
-            
-            const taskItems = document.querySelectorAll('#initial-tasks .task-item');
-            for (let i = 3; i < taskItems.length; i++) {
-                taskItems[i].remove();
-            }
-            
-            setTimeout(() => document.getElementById('add-project-title').focus(), 100);
-        }
-
-        function hideAddModal() {
-            document.getElementById('add-modal').classList.remove('show');
-        }
-
-        function addInitialTask() {
-            const container = document.getElementById('initial-tasks');
-            const taskItem = document.createElement('div');
-            taskItem.className = 'task-item';
-            taskItem.innerHTML = '<input type="text" class="add-task-input" placeholder="새로운 태스크" style="margin-top: 8px;">';
-            container.appendChild(taskItem);
-        }
-
-        function submitNewProject() {
-            const title = document.getElementById('add-project-title').value.trim();
-            const startDate = document.getElementById('add-project-start').value;
-            const dueDate = document.getElementById('add-project-due').value;
-            
-            if (!title) {
-                alert('프로젝트 제목을 입력해주세요.');
-                document.getElementById('add-project-title').focus();
-                return;
-            }
-            
-            if (!dueDate) {
-                alert('마감일을 선택해주세요.');
-                document.getElementById('add-project-due').focus();
-                return;
-            }
-            
-            if (startDate && new Date(startDate) > new Date(dueDate)) {
-                alert('시작일이 마감일보다 늦을 수 없습니다.');
-                return;
-            }
-            
-            const taskInputs = document.querySelectorAll('#initial-tasks input');
-            const tasks = [];
-            let taskId = 1;
-            
-            taskInputs.forEach(input => {
-                const taskText = input.value.trim();
-                if (taskText) {
-                    tasks.push({
-                        id: taskId++,
-                        text: taskText,
-                        completed: false
-                    });
-                }
-            });
-            
-            if (tasks.length === 0) {
-                tasks.push(
-                    { id: 1, text: '프로젝트 계획 수립', completed: false },
-                    { id: 2, text: '리소스 준비', completed: false },
-                    { id: 3, text: '실행 및 모니터링', completed: false }
-                );
-            }
-            
-            const newProject = {
-                id: nextId++,
-                title,
-                status: 'not-started',
-                progress: 0,
-                startDate: startDate || '',
-                dueDate,
-                tasks
-            };
-            
-            projects.push(newProject);
-            renderAllViews();
-            hideAddModal();
-            showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
-        }
-
-        // 디테일 모달 함수들 (편집 탭용)
-        function showDetailModal(projectId) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            currentDetailProject = project;
-            
-            document.getElementById('detail-project-title').textContent = project.title + ' (편집)';
-            
-            const detailInfo = document.getElementById('detail-info');
-            detailInfo.innerHTML = `
-                <div class="info-item">
-                    <div class="info-label">프로젝트명</div>
-                    <input type="text" id="edit-title" class="add-task-input" value="${project.title}" style="margin: 0; padding: 8px;">
-                </div>
-                <div class="info-item">
-                    <div class="info-label">상태</div>
-                    <select id="edit-status" class="add-task-input" style="margin: 0; padding: 8px;">
-                        <option value="not-started" ${project.status === 'not-started' ? 'selected' : ''}>대기 중</option>
-                        <option value="in-progress" ${project.status === 'in-progress' ? 'selected' : ''}>진행 중</option>
-                        <option value="done" ${project.status === 'done' ? 'selected' : ''}>완료</option>
-                    </select>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">착수일</div>
-                    <input type="date" id="edit-start-date" class="add-task-input" value="${project.startDate}" style="margin: 0; padding: 8px;">
-                </div>
-                <div class="info-item">
-                    <div class="info-label">마감일</div>
-                    <input type="date" id="edit-due-date" class="add-task-input" value="${project.dueDate}" style="margin: 0; padding: 8px;">
-                </div>
-            `;
-            
-            updateDetailProgress(project.progress);
-            
-            const checkboxContainer = document.getElementById('detail-checkboxes');
-            checkboxContainer.innerHTML = '';
-            for (let i = 0; i < 10; i++) {
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = (project.progress / 10) > i;
-                checkbox.addEventListener('change', () => updateDetailProgressFromCheckbox());
-                checkboxContainer.appendChild(checkbox);
-            }
-            
-            renderDetailTasks();
-            
-            document.getElementById('detail-modal').classList.add('show');
-            
-            const newTaskInput = document.getElementById('new-task-input');
-            newTaskInput.style.display = 'block';
-            newTaskInput.onkeypress = function(e) {
-                if (e.key === 'Enter') {
-                    addNewTask();
-                }
-            };
-            
-            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
-            buttonArea.innerHTML = '';
-            buttonArea.style.display = 'flex';
-            buttonArea.style.gap = '10px';
-            buttonArea.style.marginTop = '25px';
-            
-            const saveBtn = document.createElement('button');
-            saveBtn.className = 'btn';
-            saveBtn.style.flex = '1';
-            saveBtn.textContent = '💾 저장';
-            saveBtn.addEventListener('click', () => saveDetailChanges());
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn btn-cancel';
-            deleteBtn.style.flex = '1';
-            deleteBtn.textContent = '🗑️ 삭제';
-            deleteBtn.addEventListener('click', () => deleteProjectFromDetail());
-            
-            buttonArea.appendChild(saveBtn);
-            buttonArea.appendChild(deleteBtn);
-        }
-
-        function hideDetailModal() {
-            document.getElementById('detail-modal').classList.remove('show');
-            currentDetailProject = null;
-        }
-
-        function updateDetailProgress(progress) {
-            const circle = document.getElementById('detail-progress-circle');
-            circle.style.setProperty('--progress', progress);
-            circle.innerHTML = `<span>${progress}%</span>`;
-        }
-
-        function updateDetailProgressFromCheckbox() {
-            if (!currentDetailProject) return;
-            
-            const checkboxes = document.querySelectorAll('#detail-checkboxes input[type="checkbox"]');
-            let checkedCount = 0;
-            checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
-            
-            const newProgress = checkedCount * 10;
-            currentDetailProject.progress = newProgress;
-            
-            if (newProgress > 0 && !currentDetailProject.startDate) {
-                currentDetailProject.startDate = new Date().toISOString().split('T')[0];
-            }
-            
-            if (newProgress === 100) currentDetailProject.status = 'done';
-            else if (newProgress > 0) currentDetailProject.status = 'in-progress';
-            else currentDetailProject.status = 'not-started';
-            
-            updateDetailProgress(newProgress);
-            showDetailModal(currentDetailProject.id);
-        }
-
-        function renderDetailTasks() {
-            if (!currentDetailProject) return;
-            
-            const tasksContainer = document.getElementById('detail-tasks');
-            tasksContainer.innerHTML = '';
-            
-            currentDetailProject.tasks.forEach(task => {
-                const taskDiv = document.createElement('div');
-                taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'task-checkbox';
-                checkbox.checked = task.completed;
-                checkbox.addEventListener('change', () => toggleDetailTask(task.id));
-                
-                const taskText = document.createElement('div');
-                taskText.className = 'task-text';
-                taskText.textContent = task.text;
-                
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = '🗑️';
-                deleteBtn.style.cssText = 'background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;';
-                deleteBtn.addEventListener('click', () => deleteDetailTask(task.id));
-                
-                taskDiv.appendChild(checkbox);
-                taskDiv.appendChild(taskText);
-                taskDiv.appendChild(deleteBtn);
-                
-                tasksContainer.appendChild(taskDiv);
-            });
-        }
-
-        function toggleDetailTask(taskId) {
-            if (!currentDetailProject) return;
-            
-            const task = currentDetailProject.tasks.find(t => t.id === taskId);
-            if (task) {
-                task.completed = !task.completed;
-                renderDetailTasks();
-            }
-        }
-
-        function deleteDetailTask(taskId) {
-            if (!currentDetailProject) return;
-            
-            currentDetailProject.tasks = currentDetailProject.tasks.filter(t => t.id !== taskId);
-            renderDetailTasks();
-        }
-
-        function addNewTask() {
-            if (!currentDetailProject) return;
-            
-            const input = document.getElementById('new-task-input');
-            const taskText = input.value.trim();
-            
-            if (taskText) {
-                const newTaskId = Math.max(...currentDetailProject.tasks.map(t => t.id), 0) + 1;
-                currentDetailProject.tasks.push({
-                    id: newTaskId,
-                    text: taskText,
-                    completed: false
-                });
-                
-                input.value = '';
-                renderDetailTasks();
-            }
-        }
-
-        function saveDetailChanges() {
-            if (!currentDetailProject) return;
-            
-            const newTitle = document.getElementById('edit-title')?.value.trim();
-            const newStatus = document.getElementById('edit-status')?.value;
-            const newStartDate = document.getElementById('edit-start-date')?.value;
-            const newDueDate = document.getElementById('edit-due-date')?.value;
-            
-            if (!newTitle) {
-                alert('프로젝트 제목을 입력해주세요.');
-                return;
-            }
-            
-            if (!newDueDate) {
-                alert('마감일을 선택해주세요.');
-                return;
-            }
-            
-            if (newStartDate && new Date(newStartDate) > new Date(newDueDate)) {
-                alert('시작일이 마감일보다 늦을 수 없습니다.');
-                return;
-            }
-            
-            currentDetailProject.title = newTitle;
-            currentDetailProject.status = newStatus;
-            currentDetailProject.startDate = newStartDate;
-            currentDetailProject.dueDate = newDueDate;
-            
-            renderAllViews();
-            showNotification('프로젝트 정보가 저장되었습니다!');
-            hideDetailModal();
-        }
-
-        function deleteProjectFromDetail() {
-            if (!currentDetailProject) return;
-            
-            projectToDelete = currentDetailProject;
-            document.getElementById('confirm-message').textContent = `"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`;
-            document.getElementById('confirm-modal').classList.add('show');
-            
-            // 원래 confirmDelete 함수를 수정해서 상세 모달도 닫도록 함
-            const originalConfirmDelete = window.confirmDelete;
-            window.confirmDelete = function() {
-                originalConfirmDelete();
-                hideDetailModal();
-                // 원래 함수로 복원
-                window.confirmDelete = originalConfirmDelete;
-            };
-        }
-
-        // 프로젝트 관리 함수들
-        let projectToDelete = null;
-
-        function deleteProject(id) {
-            console.log('deleteProject 함수 호출됨, ID:', id);
-            const project = projects.find(p => p.id === id);
-            console.log('찾은 프로젝트:', project);
-            if (!project) {
-                console.log('프로젝트를 찾을 수 없음');
-                return;
-            }
-            
-            console.log('커스텀 삭제 확인 모달 표시');
-            projectToDelete = project;
-            document.getElementById('confirm-message').textContent = `"${project.title}" 프로젝트를 삭제하시겠습니까?`;
-            document.getElementById('confirm-modal').classList.add('show');
-        }
-
-        function confirmDelete() {
-            if (!projectToDelete) return;
-            
-            console.log('사용자가 삭제 확인함');
-            const beforeLength = projects.length;
-            projects = projects.filter(p => p.id !== projectToDelete.id);
-            const afterLength = projects.length;
-            console.log(`프로젝트 배열 길이: ${beforeLength} -> ${afterLength}`);
-            
-            document.getElementById('confirm-modal').classList.remove('show');
-            projectToDelete = null;
-            
-            renderAllViews();
-            showNotification('프로젝트가 삭제되었습니다.');
-        }
-
-        function cancelDelete() {
-            console.log('사용자가 삭제 취소함');
-            document.getElementById('confirm-modal').classList.remove('show');
-            projectToDelete = null;
-        }
-
-        function renderAllViews() {
-            renderTrack();
-            renderTimeline();
-            renderTable();
-            renderEdit();
-            saveToStorage(); // 자동 저장
-        }
-
-        function clearAll() {
-            if (confirm('모든 프로젝트를 삭제하시겠습니까? (저장된 데이터도 삭제됩니다)')) {
-                projects = [];
-                nextId = 1;
-                clearStorage();
-                renderAllViews();
-                console.log('모든 프로젝트가 삭제되었습니다.');
-            }
-        }
-
-        function saveData() {
-            saveToStorage();
-            console.log('수동 저장 완료');
-        }
-
-        function exportData() {
-            const dataStr = JSON.stringify(projects, null, 2);
-            const blob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `kanban-sprint-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showNotification('데이터가 내보내졌습니다!');
-        }
-
-        // 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFromStorage(); // 저장된 데이터 불러오기
-            renderAllViews();
-        });
-        
-        // 페이지 로드 시 즉시 실행
-        loadFromStorage();
-        renderAllViews();
-    </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -1496,6 +393,17 @@
         .month-label {
             font-size: 12px;
             color: #64748b;
+        }
+
+        /* 알림 애니메이션 */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
         }
 
         @media (max-width: 768px) {
@@ -1954,7 +862,7 @@
             <div class="edit-controls">
                 <button class="btn" onclick="showAddModal()">➕ 프로젝트 추가</button>
                 <button class="btn" onclick="clearAll()">🗑️ 전체 삭제</button>
-                <button class="btn" onclick="saveData()">💾 저장</button>
+                <button class="btn" onclick="saveToFirebase()">☁️ 수동 저장</button>
                 <button class="btn" onclick="exportData()">📤 내보내기</button>
             </div>
             
@@ -1977,8 +885,6 @@
             </div>
         </div>
     </div>
-
-    <div id="notification" class="notification">저장되었습니다!</div>
 
     <!-- 프로젝트 추가 모달 -->
     <div id="add-modal" class="detail-modal">
@@ -2070,92 +976,367 @@
         </div>
     </div>
 
+    <!-- 확인 모달 -->
+    <div id="confirm-modal" class="detail-modal">
+        <div class="detail-content" style="max-width: 400px;">
+            <div class="detail-header">
+                <div class="detail-title">🗑️ 프로젝트 삭제</div>
+            </div>
+            <div style="padding: 20px 0; text-align: center;">
+                <div id="confirm-message" style="font-size: 16px; color: #1e293b; margin-bottom: 20px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-cancel" style="flex: 1;" onclick="cancelDelete()">취소</button>
+                    <button class="btn" style="flex: 1; background: linear-gradient(135deg, #dc2626, #b91c1c);" onclick="confirmDelete()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (안정적인 CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-app.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/8.10.1/firebase-firestore.min.js"></script>
+    
+    <script>
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyDx6UqoMMyo-JexUkWfXs7W_cz7rsUIl04",
+            authDomain: "kanban-sprint.firebaseapp.com",
+            projectId: "kanban-sprint",
+            storageBucket: "kanban-sprint.firebasestorage.app",
+            messagingSenderId: "142357228665",
+            appId: "1:142357228665:web:4dee892d322478d97d38a8",
+            measurementId: "G-0FER7QK4X7"
+        };
+
+        let db = null;
+        let isFirebaseReady = false;
+        let firebaseAttempts = 0;
+        const maxAttempts = 30; // 3초 대기
+
+        // Firebase 초기화 함수
+        function initFirebase() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.app) {
+                    firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
+                    isFirebaseReady = true;
+                    console.log('✅ Firebase 초기화 성공');
+                    showNotification('🔥 Firebase 연결됨');
+                    
+                    // 초기화 성공 후 데이터 로드
+                    loadFromFirebase();
+                    return true;
+                } else {
+                    throw new Error('Firebase SDK가 완전히 로드되지 않음');
+                }
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+                isFirebaseReady = false;
+                showNotification('⚠️ 오프라인 모드로 시작');
+                
+                // Firebase 실패 시 기본 렌더링
+                renderAllViews();
+                return false;
+            }
+        }
+
+        // Firebase SDK 로딩 대기 (개선된 버전)
+        function waitForFirebase() {
+            firebaseAttempts++;
+            
+            if (typeof firebase !== 'undefined' && firebase.app) {
+                console.log(`✅ Firebase SDK 로드됨 (${firebaseAttempts}번째 시도)`);
+                initFirebase();
+            } else if (firebaseAttempts >= maxAttempts) {
+                console.log('⏰ Firebase SDK 로딩 타임아웃 - 오프라인 모드');
+                isFirebaseReady = false;
+                showNotification('⚠️ 네트워크 오류 - 오프라인 모드');
+                renderAllViews();
+            } else {
+                console.log(`⏳ Firebase SDK 대기 중... (${firebaseAttempts}/${maxAttempts})`);
+                setTimeout(waitForFirebase, 100);
+            }
+        }
+
+        // Firebase 없이도 작동하는 기본 함수들
+        function showNotificationSafe(message) {
+            try {
+                showNotification(message);
+            } catch (e) {
+                console.log('알림:', message);
+            }
+        }
+    </script>
+
     <script>
         let projects = [
-            { 
-                id: 1, 
-                title: "웹사이트 리뉴얼", 
-                status: "in-progress", 
-                progress: 70, 
-                startDate: "2024-03-15", 
-                dueDate: "2024-05-20",
-                tasks: [
-                    { id: 1, text: "디자인 시안 작성", completed: true },
-                    { id: 2, text: "프론트엔드 개발", completed: true },
-                    { id: 3, text: "백엔드 API 연동", completed: true },
-                    { id: 4, text: "테스트 및 배포", completed: false }
+            {
+                "id": 1,
+                "title": "PBI - Transportation Daily",
+                "status": "in-progress",
+                "progress": 70,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "디자인 시안 작성", "completed": true},
+                    {"id": 2, "text": "프론트엔드 개발", "completed": true},
+                    {"id": 3, "text": "백엔드 API 연동", "completed": true},
+                    {"id": 4, "text": "테스트 및 배포", "completed": false}
                 ]
             },
-            { 
-                id: 2, 
-                title: "모바일 앱 개발", 
-                status: "not-started", 
-                progress: 0, 
-                startDate: "2024-06-01", 
-                dueDate: "2024-08-15",
-                tasks: [
-                    { id: 1, text: "요구사항 분석", completed: false },
-                    { id: 2, text: "UI/UX 디자인", completed: false },
-                    { id: 3, text: "개발 및 테스트", completed: false }
+            {
+                "id": 2,
+                "title": "PBI - People Network Productivity",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-30",
+                "dueDate": "2025-07-08",
+                "tasks": [
+                    {"id": 1, "text": "요구사항 분석", "completed": false},
+                    {"id": 2, "text": "UI/UX 디자인", "completed": false},
+                    {"id": 3, "text": "개발 및 테스트", "completed": false}
                 ]
             },
-            { 
-                id: 3, 
-                title: "데이터베이스 최적화", 
-                status: "done", 
-                progress: 100, 
-                startDate: "2024-03-01", 
-                dueDate: "2024-04-15",
-                tasks: [
-                    { id: 1, text: "성능 분석", completed: true },
-                    { id: 2, text: "쿼리 최적화", completed: true },
-                    { id: 3, text: "인덱스 재구성", completed: true },
-                    { id: 4, text: "결과 검증", completed: true }
+            {
+                "id": 3,
+                "title": "업무 자동화 워크샵",
+                "status": "done",
+                "progress": 100,
+                "startDate": "2025-06-04",
+                "dueDate": "2025-06-10",
+                "tasks": [
+                    {"id": 1, "text": "성능 분석", "completed": true},
+                    {"id": 2, "text": "쿼리 최적화", "completed": true},
+                    {"id": 3, "text": "인덱스 재구성", "completed": true},
+                    {"id": 4, "text": "결과 검증", "completed": true}
                 ]
             },
-            { 
-                id: 4, 
-                title: "마케팅 캠페인", 
-                status: "in-progress", 
-                progress: 40, 
-                startDate: "2024-04-01", 
-                dueDate: "2024-07-31",
-                tasks: [
-                    { id: 1, text: "타겟 고객 분석", completed: true },
-                    { id: 2, text: "콘텐츠 제작", completed: true },
-                    { id: 3, text: "광고 집행", completed: false },
-                    { id: 4, text: "성과 측정", completed: false },
-                    { id: 5, text: "결과 보고서", completed: false }
+            {
+                "id": 4,
+                "title": "PBI - Direct Delivery",
+                "status": "in-progress",
+                "progress": 40,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "타겟 고객 분석", "completed": true},
+                    {"id": 2, "text": "콘텐츠 제작", "completed": true},
+                    {"id": 3, "text": "광고 집행", "completed": false},
+                    {"id": 4, "text": "성과 측정", "completed": false},
+                    {"id": 5, "text": "결과 보고서", "completed": false}
                 ]
             },
-            { 
-                id: 5, 
-                title: "API 개발", 
-                status: "done", 
-                progress: 100, 
-                startDate: "2024-03-10", 
-                dueDate: "2024-04-30",
-                tasks: [
-                    { id: 1, text: "API 설계", completed: true },
-                    { id: 2, text: "개발", completed: true },
-                    { id: 3, text: "테스트", completed: true }
+            {
+                "id": 5,
+                "title": "WMS 배치 조회 프로그램",
+                "status": "done",
+                "progress": 100,
+                "startDate": "2025-05-10",
+                "dueDate": "2025-05-30",
+                "tasks": [
+                    {"id": 1, "text": "API 설계", "completed": true},
+                    {"id": 2, "text": "개발", "completed": true},
+                    {"id": 3, "text": "테스트", "completed": true}
                 ]
             },
-            { 
-                id: 6, 
-                title: "보안 강화", 
-                status: "in-progress", 
-                progress: 60, 
-                startDate: "2024-05-01", 
-                dueDate: "2024-06-30",
-                tasks: [
-                    { id: 1, text: "보안 감사", completed: true },
-                    { id: 2, text: "취약점 수정", completed: false }
+            {
+                "id": 6,
+                "title": "PBI - Load Schedule",
+                "status": "in-progress",
+                "progress": 60,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "보안 감사", "completed": true},
+                    {"id": 2, "text": "취약점 수정", "completed": false}
+                ]
+            },
+            {
+                "id": 7,
+                "title": "PBI - Truck Turnover",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 8,
+                "title": "PBI - Route Efficiency",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 9,
+                "title": "공장 재고 시각화",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-09",
+                "dueDate": "2025-07-15",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 10,
+                "title": "배차 프로세스 최적화",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-17",
+                "dueDate": "2025-06-27",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 11,
+                "title": "PBI - Weight Performance",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 12,
+                "title": "운송 KPI 대시보드 전체 병합",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-17",
+                "dueDate": "2025-07-17",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 13,
+                "title": "공장 재고 분석",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-16",
+                "dueDate": "2025-06-17",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 14,
+                "title": "운송 PBI 데이터 소스 변경",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-18",
+                "dueDate": "2025-07-18",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
                 ]
             }
         ];
-        let nextId = 7;
+        let nextId = 15;
         let currentDetailProject = null;
+        let projectToDelete = null;
+
+        // Firebase 데이터 관리 함수들
+        async function saveToFirebase() {
+            if (!isFirebaseReady || !db) {
+                console.log('Firebase 사용 불가 - 오프라인 모드');
+                showNotification('오프라인 모드 - 로컬에서만 저장됨');
+                return;
+            }
+
+            try {
+                // 기존 프로젝트들 삭제 (전체 교체 방식)
+                const querySnapshot = await db.collection('projects').get();
+                const deletePromises = querySnapshot.docs.map(doc => doc.ref.delete());
+                await Promise.all(deletePromises);
+
+                // 새 프로젝트들 저장
+                const savePromises = projects.map(project => 
+                    db.collection('projects').add(project)
+                );
+                await Promise.all(savePromises);
+                
+                console.log('Firebase에 저장 완료');
+                showNotification('✅ 클라우드에 저장 완료!');
+            } catch (error) {
+                console.error('Firebase 저장 실패:', error);
+                showNotification('❌ 저장 실패 - 오프라인 모드');
+            }
+        }
+
+        async function loadFromFirebase() {
+            if (!isFirebaseReady || !db) {
+                console.log('Firebase 사용 불가 - 기본 데이터 사용');
+                showNotification('오프라인 모드로 시작');
+                renderAllViews();
+                return;
+            }
+
+            try {
+                const querySnapshot = await db.collection('projects').get();
+                const firebaseProjects = [];
+                
+                querySnapshot.forEach((doc) => {
+                    firebaseProjects.push({ ...doc.data(), firebaseId: doc.id });
+                });
+
+                if (firebaseProjects.length > 0) {
+                    projects = firebaseProjects;
+                    nextId = Math.max(...projects.map(p => p.id), 0) + 1;
+                    console.log('Firebase에서 데이터 불러옴:', projects.length, '개 프로젝트');
+                    showNotification(`📥 ${projects.length}개 프로젝트 로드됨`);
+                } else {
+                    console.log('Firebase에 데이터가 없음, 기본 데이터 사용');
+                    // 기본 데이터를 Firebase에 저장
+                    await saveToFirebase();
+                }
+                
+                renderAllViews();
+            } catch (error) {
+                console.error('Firebase 로드 실패:', error);
+                console.log('오프라인 모드: 기본 데이터 사용');
+                showNotification('⚠️ 오프라인 모드로 시작');
+                renderAllViews();
+            }
+        }
+
+        // 자동 저장 함수 (변경사항이 있을 때마다 호출)
+        function autoSave() {
+            if (!isFirebaseReady) {
+                console.log('Firebase 비활성화 - 자동저장 건너뜀');
+                return;
+            }
+            
+            // 디바운스: 연속 호출 방지
+            clearTimeout(autoSave.timeout);
+            autoSave.timeout = setTimeout(() => {
+                saveToFirebase();
+            }, 2000); // 2초 후 저장 (더 안정적)
+        }
 
         // 기본 함수들
         function toggleSidebar() {
@@ -2176,43 +1357,159 @@
             else if (viewName === 'edit') renderEdit();
         }
 
+        function getStatusText(status) {
+            const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
+            return map[status] || status;
+        }
+
+        function showNotification(message) {
+            // 간단한 알림 표시
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #22c55e, #16a34a);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-weight: 600;
+                font-size: 14px;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            // 오류 메시지면 빨간색으로
+            if (message.includes('❌') || message.includes('⚠️')) {
+                notification.style.background = 'linear-gradient(135deg, #dc2626, #b91c1c)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
+
+        // 렌더링 함수들
+        function renderTrack() {
+            const container = document.getElementById('runners-container');
+            container.innerHTML = '';
+
+            const activeProjects = projects.filter(p => p.status !== 'done').sort((a, b) => b.progress - a.progress);
+
+            activeProjects.forEach((project, index) => {
+                const runner = document.createElement('div');
+                runner.className = `runner status-${project.status}`;
+                runner.style.cursor = 'pointer';
+                
+                const runnerIcons = ['🏃‍♂️', '🏃‍♀️', '🚀', '⚡'];
+                const icon = runnerIcons[index % runnerIcons.length];
+                
+                runner.innerHTML = `
+                    <div class="runner-icon">${icon}</div>
+                    <div class="runner-info">
+                        <div class="runner-name">${project.title}</div>
+                        <div class="runner-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="progress-percentage">${project.progress}%</div>
+                        </div>
+                        <div class="runner-meta">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                            <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                runner.onclick = function() { showProjectInfoModal(project.id); };
+                container.appendChild(runner);
+            });
+
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const allProjects = [...projects].sort((a, b) => {
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+
+            allProjects.forEach(project => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.innerHTML = `
+                    <td><strong>${project.title}</strong></td>
+                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="progress-track" style="flex: 1; height: 6px;">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <strong>${project.progress}%</strong>
+                        </div>
+                    </td>
+                    <td>${project.startDate || '미정'}</td>
+                    <td>${project.dueDate}</td>
+                `;
+                
+                row.onclick = function() { showProjectInfoModal(project.id); };
+                tbody.appendChild(row);
+            });
+
+            if (allProjects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">프로젝트가 없습니다!</td></tr>';
+            }
+        }
+
         // 간트 차트 타임라인 렌더링 함수들
         function renderTimeline() {
             const container = document.getElementById('timeline-content');
             container.innerHTML = '';
             
-            // 간트 차트 생성
             const ganttChart = document.createElement('div');
             ganttChart.className = 'gantt-chart';
             
-            // 헤더 생성
             const ganttHeader = document.createElement('div');
             ganttHeader.className = 'gantt-header';
             
-            const months = ['프로젝트', '3월', '4월', '5월', '6월', '7월', '8월'];
+            const months = ['프로젝트', '6월', '7월', '8월'];
             months.forEach(month => {
                 const cell = document.createElement('div');
                 cell.className = 'gantt-header-cell';
-                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2024</div>`;
+                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2025</div>`;
                 ganttHeader.appendChild(cell);
             });
             
             ganttChart.appendChild(ganttHeader);
             
-            // 바디 생성
             const ganttBody = document.createElement('div');
             ganttBody.className = 'gantt-body';
             
-            // 오늘 날짜로 현재 위치 계산
             const today = new Date();
-            const currentMonth = today.getMonth() + 1; // 1-12
+            const currentMonth = today.getMonth() + 1;
             const currentDay = today.getDate();
             
             projects.forEach(project => {
                 const row = document.createElement('div');
                 row.className = 'gantt-row';
                 
-                // 프로젝트 이름 셀
                 const nameCell = document.createElement('div');
                 nameCell.className = 'gantt-cell gantt-project-name';
                 nameCell.innerHTML = `
@@ -2222,19 +1519,16 @@
                 nameCell.onclick = function() { showProjectInfoModal(project.id); };
                 row.appendChild(nameCell);
                 
-                // 월별 셀들 (6월-8월)
                 for (let month = 6; month <= 8; month++) {
                     const cell = document.createElement('div');
                     cell.className = 'gantt-cell';
                     
-                    // 프로젝트 바 생성
                     const projectBar = createProjectBar(project, month);
                     if (projectBar) {
                         cell.appendChild(projectBar);
                     }
                     
-                    // 오늘 표시 (현재 월인 경우)
-                    if (month === currentMonth) {
+                    if (month === currentMonth && currentMonth >= 6 && currentMonth <= 8) {
                         const todayLine = document.createElement('div');
                         todayLine.className = 'gantt-today-line';
                         const dayPercentage = (currentDay / 31) * 100;
@@ -2263,7 +1557,10 @@
             const startMonth = startDate.getMonth() + 1;
             const endMonth = endDate.getMonth() + 1;
             
-            // 이 월에 프로젝트가 없으면 null 반환
+            if (month < 6 || month > 8) {
+                return null;
+            }
+            
             if (month < startMonth || month > endMonth) {
                 return null;
             }
@@ -2271,35 +1568,30 @@
             const bar = document.createElement('div');
             bar.className = `gantt-bar ${project.status}`;
             
-            // 바의 위치와 크기 계산
             let left = 0;
             let width = 100;
             
             if (month === startMonth && month === endMonth) {
-                // 시작월과 종료월이 같은 경우
                 const startDay = startDate.getDate();
                 const endDay = endDate.getDate();
-                const daysInMonth = new Date(2024, month, 0).getDate();
+                const daysInMonth = new Date(2025, month, 0).getDate();
                 
                 left = (startDay / daysInMonth) * 100;
                 width = ((endDay - startDay + 1) / daysInMonth) * 100;
             } else if (month === startMonth) {
-                // 시작월인 경우
                 const startDay = startDate.getDate();
-                const daysInMonth = new Date(2024, month, 0).getDate();
+                const daysInMonth = new Date(2025, month, 0).getDate();
                 left = (startDay / daysInMonth) * 100;
                 width = ((daysInMonth - startDay + 1) / daysInMonth) * 100;
             } else if (month === endMonth) {
-                // 종료월인 경우
                 const endDay = endDate.getDate();
-                const daysInMonth = new Date(2024, month, 0).getDate();
+                const daysInMonth = new Date(2025, month, 0).getDate();
                 width = (endDay / daysInMonth) * 100;
             }
             
             bar.style.left = `${left}%`;
             bar.style.width = `${width}%`;
             
-            // 진행률 표시 (시작월에만 표시)
             if (month === startMonth) {
                 bar.textContent = `${project.progress}%`;
             }
@@ -2310,62 +1602,202 @@
             };
             
             return bar;
-        }            });
-            
-            // 필터 버튼 상태 업데이트
-            updateTimelineFilterButtons();
-            
-            if (filteredProjects.length === 0) {
-                container.innerHTML += '<div style="text-align: center; color: #64748b; padding: 60px;">표시할 프로젝트가 없습니다.</div>';
-            }
         }
 
-        function calculateProjectDuration(project) {
-            if (!project.startDate || !project.dueDate) return null;
+        // 보기 전용 상세 모달 (메인 페이지용)
+        function showProjectInfoModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
             
-            const start = new Date(project.startDate);
-            const end = new Date(project.dueDate);
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            currentDetailProject = project;
             
-            if (diffDays === 0) return '당일';
-            if (diffDays < 7) return `${diffDays}일`;
-            if (diffDays < 30) return `${Math.ceil(diffDays / 7)}주`;
-            return `${Math.ceil(diffDays / 30)}개월`;
-        }
-
-        function calculateDaysRemaining(project) {
-            const today = new Date();
-            const dueDate = new Date(project.dueDate);
-            const diffTime = dueDate - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            document.getElementById('detail-project-title').textContent = project.title;
             
-            if (project.status === 'done') return '완료됨';
-            if (diffDays < 0) return `${Math.abs(diffDays)}일 지연`;
-            if (diffDays === 0) return '오늘 마감';
-            if (diffDays === 1) return '내일 마감';
-            return `${diffDays}일 남음`;
-        }
-
-        function getDaysRemainingColor(daysText) {
-            if (daysText.includes('완료')) return '#22c55e';
-            if (daysText.includes('지연')) return '#dc2626';
-            if (daysText.includes('오늘') || daysText.includes('내일')) return '#f59e0b';
-            return '#64748b';
-        }
-
-        function getStatusText(status) {
-            const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
-            return map[status] || status;
-        }
-
-        function showNotification(message) {
-            const notification = document.getElementById('notification');
-            notification.innerHTML = `✅ ${message}`;
-            notification.classList.add('show');
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <div class="info-value">
+                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <div class="info-value">${project.startDate || '미정'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <div class="info-value">${project.dueDate}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">태스크 완료</div>
+                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
             setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+                const progressSection = document.querySelector('#detail-modal .section-title');
+                if (progressSection && progressSection.textContent.includes('진행률')) {
+                    progressSection.innerHTML = '📊 진행률';
+                }
+            }, 10);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            let tasksHtml = '';
+            
+            project.tasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+                        <div class="task-text">${task.text}</div>
+                    </div>
+                `;
+            });
+            
+            tasksContainer.innerHTML = tasksHtml;
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'none';
+            
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'block';
+            buttonArea.style.marginTop = '25px';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn';
+            closeBtn.style.width = '100%';
+            closeBtn.textContent = '닫기';
+            closeBtn.onclick = function() { hideDetailModal(); };
+            
+            buttonArea.appendChild(closeBtn);
+        }
+
+        function renderEdit() {
+            ['not-started', 'in-progress', 'done'].forEach(status => {
+                const container = document.getElementById(status);
+                container.innerHTML = '';
+                
+                projects.filter(p => p.status === status).forEach(project => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.cursor = 'pointer';
+                    
+                    let checkboxes = '';
+                    for (let i = 0; i < 10; i++) {
+                        const checked = (project.progress / 10) > i ? 'checked' : '';
+                        checkboxes += `<input type="checkbox" ${checked}>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="card-title">${project.title}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
+                            진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
+                        </div>
+                        <div class="checkboxes">${checkboxes}</div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: ${project.progress}%"></div>
+                        </div>
+                        <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;">
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', (e) => {
+                        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
+                            return;
+                        }
+                        showDetailModal(project.id);
+                    });
+                    
+                    const buttonContainer = card.querySelector('.button-container');
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = '✏️ 편집';
+                    editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDetailModal(project.id);
+                    });
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '🗑️ 삭제';
+                    deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteProject(project.id);
+                    });
+                    
+                    buttonContainer.appendChild(editBtn);
+                    buttonContainer.appendChild(deleteBtn);
+                    
+                    const checkboxElements = card.querySelectorAll('.checkboxes input[type="checkbox"]');
+                    checkboxElements.forEach((checkbox, index) => {
+                        checkbox.addEventListener('change', (e) => {
+                            e.stopPropagation();
+                            updateProgressFromCheckbox(project.id, index, checkbox.checked);
+                        });
+                    });
+                    
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        function updateProgressFromCheckbox(projectId, checkboxIndex, isChecked) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            let targetCard = null;
+            
+            document.querySelectorAll('.card').forEach(card => {
+                const titleElement = card.querySelector('.card-title');
+                if (titleElement && titleElement.textContent === project.title) {
+                    targetCard = card;
+                }
+            });
+            
+            if (targetCard) {
+                const checkboxes = targetCard.querySelectorAll('.checkboxes input[type="checkbox"]');
+                let checkedCount = 0;
+                
+                checkboxes.forEach(cb => {
+                    if (cb.checked) checkedCount++;
+                });
+                
+                const oldProgress = project.progress;
+                const oldStatus = project.status;
+                
+                project.progress = checkedCount * 10;
+                
+                if (project.progress > 0 && !project.startDate) {
+                    project.startDate = new Date().toISOString().split('T')[0];
+                }
+                
+                if (project.progress === 100) {
+                    project.status = 'done';
+                } else if (project.progress > 0) {
+                    project.status = 'in-progress';
+                } else {
+                    project.status = 'not-started';
+                }
+                
+                if (oldProgress !== project.progress || oldStatus !== project.status) {
+                    renderAllViews();
+                    autoSave(); // 자동 저장
+                    showNotification(`${project.title} 진행률: ${project.progress}%`);
+                }
+            }
         }
 
         // 프로젝트 추가 모달 관련 함수들
@@ -2375,11 +1807,9 @@
             document.getElementById('add-project-start').value = '';
             document.getElementById('add-project-due').value = '';
             
-            // 초기 태스크 입력 필드 초기화
             const initialTaskInputs = document.querySelectorAll('#initial-tasks input');
             initialTaskInputs.forEach(input => input.value = '');
             
-            // 추가된 태스크 필드들 제거 (기본 3개만 남김)
             const taskItems = document.querySelectorAll('#initial-tasks .task-item');
             for (let i = 3; i < taskItems.length; i++) {
                 taskItems[i].remove();
@@ -2417,13 +1847,11 @@
                 return;
             }
             
-            // 시작일이 마감일보다 늦은 경우 확인
             if (startDate && new Date(startDate) > new Date(dueDate)) {
                 alert('시작일이 마감일보다 늦을 수 없습니다.');
                 return;
             }
             
-            // 초기 태스크 수집
             const taskInputs = document.querySelectorAll('#initial-tasks input');
             const tasks = [];
             let taskId = 1;
@@ -2439,7 +1867,6 @@
                 }
             });
             
-            // 기본 태스크가 없으면 기본값 추가
             if (tasks.length === 0) {
                 tasks.push(
                     { id: 1, text: '프로젝트 계획 수립', completed: false },
@@ -2460,6 +1887,7 @@
             
             projects.push(newProject);
             renderAllViews();
+            autoSave(); // 자동 저장
             hideAddModal();
             showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
         }
@@ -2513,7 +1941,6 @@
             
             document.getElementById('detail-modal').classList.add('show');
             
-            // 새 태스크 입력 활성화
             const newTaskInput = document.getElementById('new-task-input');
             newTaskInput.style.display = 'block';
             newTaskInput.onkeypress = function(e) {
@@ -2522,7 +1949,6 @@
                 }
             };
             
-            // 편집 버튼 복원 (이벤트 리스너로)
             const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
             buttonArea.innerHTML = '';
             buttonArea.style.display = 'flex';
@@ -2650,13 +2076,11 @@
         function saveDetailChanges() {
             if (!currentDetailProject) return;
             
-            // 편집된 정보 수집
             const newTitle = document.getElementById('edit-title')?.value.trim();
             const newStatus = document.getElementById('edit-status')?.value;
             const newStartDate = document.getElementById('edit-start-date')?.value;
             const newDueDate = document.getElementById('edit-due-date')?.value;
             
-            // 유효성 검사
             if (!newTitle) {
                 alert('프로젝트 제목을 입력해주세요.');
                 return;
@@ -2672,13 +2096,13 @@
                 return;
             }
             
-            // 변경사항 적용
             currentDetailProject.title = newTitle;
             currentDetailProject.status = newStatus;
             currentDetailProject.startDate = newStartDate;
             currentDetailProject.dueDate = newDueDate;
             
             renderAllViews();
+            autoSave(); // 자동 저장
             showNotification('프로젝트 정보가 저장되었습니다!');
             hideDetailModal();
         }
@@ -2686,331 +2110,16 @@
         function deleteProjectFromDetail() {
             if (!currentDetailProject) return;
             
-            if (confirm(`"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`)) {
-                projects = projects.filter(p => p.id !== currentDetailProject.id);
+            projectToDelete = currentDetailProject;
+            document.getElementById('confirm-message').textContent = `"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`;
+            document.getElementById('confirm-modal').classList.add('show');
+            
+            const originalConfirmDelete = window.confirmDelete;
+            window.confirmDelete = function() {
+                originalConfirmDelete();
                 hideDetailModal();
-                renderAllViews();
-                showNotification('프로젝트가 삭제되었습니다.');
-            }
-        }
-
-        // 렌더링 함수들
-        function renderTrack() {
-            const container = document.getElementById('runners-container');
-            container.innerHTML = '';
-
-            const activeProjects = projects.filter(p => p.status !== 'done').sort((a, b) => b.progress - a.progress);
-
-            activeProjects.forEach((project, index) => {
-                const runner = document.createElement('div');
-                runner.className = `runner status-${project.status}`;
-                runner.style.cursor = 'pointer';
-                
-                const runnerIcons = ['🏃‍♂️', '🏃‍♀️', '🚀', '⚡'];
-                const icon = runnerIcons[index % runnerIcons.length];
-                
-                runner.innerHTML = `
-                    <div class="runner-icon">${icon}</div>
-                    <div class="runner-info">
-                        <div class="runner-name">${project.title}</div>
-                        <div class="runner-progress">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: ${project.progress}%"></div>
-                            </div>
-                            <div class="progress-percentage">${project.progress}%</div>
-                        </div>
-                        <div class="runner-meta">
-                            <span>🚀 ${project.startDate || '미정'}</span>
-                            <span>📅 ${project.dueDate}</span>
-                            <span class="status ${project.status}">${getStatusText(project.status)}</span>
-                        </div>
-                    </div>
-                `;
-                
-                // 전역 함수로 클릭 이벤트 추가
-                runner.onclick = function() { showProjectInfoModal(project.id); };
-                
-                container.appendChild(runner);
-            });
-
-            if (activeProjects.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
-            }
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            const completedProjects = projects.filter(p => p.status === 'done');
-
-            completedProjects.forEach(project => {
-                const row = document.createElement('tr');
-                row.style.cursor = 'pointer';
-                row.innerHTML = `
-                    <td><strong>${project.title}</strong></td>
-                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="progress-track" style="flex: 1; height: 6px;">
-                                <div class="progress-fill" style="width: ${project.progress}%"></div>
-                            </div>
-                            <strong>${project.progress}%</strong>
-                        </div>
-                    </td>
-                    <td>${project.startDate || '미정'}</td>
-                    <td>${project.dueDate}</td>
-                `;
-                
-                // 전역 함수로 클릭 이벤트 추가
-                row.onclick = function() { showProjectInfoModal(project.id); };
-                
-                tbody.appendChild(row);
-            });
-
-            if (completedProjects.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">완료된 프로젝트가 없습니다!</td></tr>';
-            }
-        }
-
-        // 보기 전용 상세 모달 (메인 페이지용) - 기존 모달 재활용
-        function showProjectInfoModal(projectId) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            currentDetailProject = project;
-            
-            // 제목 설정
-            document.getElementById('detail-project-title').textContent = project.title;
-            
-            // 프로젝트 정보 (읽기 전용)
-            const detailInfo = document.getElementById('detail-info');
-            detailInfo.innerHTML = `
-                <div class="info-item">
-                    <div class="info-label">상태</div>
-                    <div class="info-value">
-                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">착수일</div>
-                    <div class="info-value">${project.startDate || '미정'}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">마감일</div>
-                    <div class="info-value">${project.dueDate}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">태스크 완료</div>
-                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
-                </div>
-            `;
-            
-            // 진행률 설정 (읽기 전용)
-            updateDetailProgress(project.progress);
-            
-            // 진행률 제목 변경
-            setTimeout(() => {
-                const progressSection = document.querySelector('#detail-modal .section-title');
-                if (progressSection && progressSection.textContent.includes('진행률')) {
-                    progressSection.innerHTML = '📊 진행률';
-                }
-            }, 10);
-            
-            // 진행률 표시만 (체크박스 제거)
-            const checkboxContainer = document.getElementById('detail-checkboxes');
-            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
-            
-            // 태스크 목록 (읽기 전용)
-            const tasksContainer = document.getElementById('detail-tasks');
-            let tasksHtml = '';
-            
-            project.tasks.forEach(task => {
-                tasksHtml += `
-                    <div class="task-item ${task.completed ? 'completed' : ''}">
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
-                        <div class="task-text">${task.text}</div>
-                    </div>
-                `;
-            });
-            
-            tasksContainer.innerHTML = tasksHtml;
-            
-            // 모달 표시
-            document.getElementById('detail-modal').classList.add('show');
-            
-            // 새 태스크 입력 비활성화
-            const newTaskInput = document.getElementById('new-task-input');
-            newTaskInput.style.display = 'none';
-            
-            // 버튼 영역을 닫기 버튼만으로 변경
-            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
-            buttonArea.innerHTML = '';
-            buttonArea.style.display = 'block';
-            buttonArea.style.marginTop = '25px';
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'btn';
-            closeBtn.style.width = '100%';
-            closeBtn.textContent = '닫기';
-            closeBtn.onclick = function() { hideDetailModal(); };
-            
-            buttonArea.appendChild(closeBtn);
-        }
-
-        function renderDetailTasks() {
-            if (!currentDetailProject) return;
-            
-            const tasksContainer = document.getElementById('detail-tasks');
-            let tasksHtml = '';
-            
-            currentDetailProject.tasks.forEach(task => {
-                tasksHtml += `
-                    <div class="task-item ${task.completed ? 'completed' : ''}">
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
-                               onchange="toggleDetailTask(${task.id})">
-                        <div class="task-text">${task.text}</div>
-                        <button style="background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;" 
-                                onclick="deleteDetailTask(${task.id})">🗑️</button>
-                    </div>
-                `;
-            });
-            
-            tasksContainer.innerHTML = tasksHtml;
-        }
-
-        function renderEdit() {
-            ['not-started', 'in-progress', 'done'].forEach(status => {
-                const container = document.getElementById(status);
-                container.innerHTML = '';
-                
-                projects.filter(p => p.status === status).forEach(project => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.cursor = 'pointer';
-                    
-                    // 체크박스 생성
-                    let checkboxes = '';
-                    for (let i = 0; i < 10; i++) {
-                        const checked = (project.progress / 10) > i ? 'checked' : '';
-                        checkboxes += `<input type="checkbox" ${checked}>`;
-                    }
-                    
-                    // 카드 기본 HTML 생성
-                    card.innerHTML = `
-                        <div class="card-title">${project.title}</div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
-                            <span>🚀 ${project.startDate || '미정'}</span>
-                            <span>📅 ${project.dueDate}</span>
-                        </div>
-                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
-                            진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
-                        </div>
-                        <div class="checkboxes">${checkboxes}</div>
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width: ${project.progress}%"></div>
-                        </div>
-                        <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;">
-                        </div>
-                    `;
-                    
-                    // 카드 클릭 시 편집 모달 열기
-                    card.addEventListener('click', (e) => {
-                        // 버튼이나 체크박스 클릭 시에는 모달을 열지 않음
-                        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
-                            return;
-                        }
-                        showDetailModal(project.id);
-                    });
-                    
-                    // 버튼들을 별도로 생성하고 이벤트 리스너 추가
-                    const buttonContainer = card.querySelector('.button-container');
-                    
-                    // 편집 버튼 (통합)
-                    const editBtn = document.createElement('button');
-                    editBtn.textContent = '✏️ 편집';
-                    editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
-                    editBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showDetailModal(project.id);
-                    });
-                    
-                    // 삭제 버튼
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.textContent = '🗑️ 삭제';
-                    deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteProject(project.id);
-                    });
-                    
-                    buttonContainer.appendChild(editBtn);
-                    buttonContainer.appendChild(deleteBtn);
-                    
-                    // 체크박스 이벤트 리스너 추가
-                    const checkboxElements = card.querySelectorAll('.checkboxes input[type="checkbox"]');
-                    checkboxElements.forEach((checkbox, index) => {
-                        checkbox.addEventListener('change', (e) => {
-                            e.stopPropagation();
-                            updateProgressFromCheckbox(project.id, index, checkbox.checked);
-                        });
-                    });
-                    
-                    container.appendChild(card);
-                });
-            });
-        }
-
-        // 개선된 체크박스 진행률 업데이트
-        function updateProgressFromCheckbox(projectId, checkboxIndex, isChecked) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            // 현재 체크된 체크박스들의 개수를 정확히 계산
-            let targetCard = null;
-            
-            // 카드 찾기
-            document.querySelectorAll('.card').forEach(card => {
-                const titleElement = card.querySelector('.card-title');
-                if (titleElement && titleElement.textContent === project.title) {
-                    targetCard = card;
-                }
-            });
-            
-            if (targetCard) {
-                // 체크박스 상태 기반으로 진행률 계산
-                const checkboxes = targetCard.querySelectorAll('.checkboxes input[type="checkbox"]');
-                let checkedCount = 0;
-                
-                checkboxes.forEach(cb => {
-                    if (cb.checked) checkedCount++;
-                });
-                
-                const oldProgress = project.progress;
-                const oldStatus = project.status;
-                
-                project.progress = checkedCount * 10;
-                
-                // 시작일 자동 설정
-                if (project.progress > 0 && !project.startDate) {
-                    project.startDate = new Date().toISOString().split('T')[0];
-                }
-                
-                // 상태 자동 변경
-                if (project.progress === 100) {
-                    project.status = 'done';
-                } else if (project.progress > 0) {
-                    project.status = 'in-progress';
-                } else {
-                    project.status = 'not-started';
-                }
-                
-                // 변경사항이 있을 때만 새로고침
-                if (oldProgress !== project.progress || oldStatus !== project.status) {
-                    renderAllViews();
-                    showNotification(`${project.title} 진행률: ${project.progress}%`);
-                }
-            }
+                window.confirmDelete = originalConfirmDelete;
+            };
         }
 
         // 프로젝트 관리 함수들
@@ -3018,11 +2127,27 @@
             const project = projects.find(p => p.id === id);
             if (!project) return;
             
-            if (confirm(`"${project.title}" 프로젝트를 삭제하시겠습니까?`)) {
-                projects = projects.filter(p => p.id !== id);
-                renderAllViews();
-                showNotification('프로젝트가 삭제되었습니다.');
-            }
+            projectToDelete = project;
+            document.getElementById('confirm-message').textContent = `"${project.title}" 프로젝트를 삭제하시겠습니까?`;
+            document.getElementById('confirm-modal').classList.add('show');
+        }
+
+        function confirmDelete() {
+            if (!projectToDelete) return;
+            
+            projects = projects.filter(p => p.id !== projectToDelete.id);
+            
+            document.getElementById('confirm-modal').classList.remove('show');
+            projectToDelete = null;
+            
+            renderAllViews();
+            autoSave(); // 자동 저장
+            showNotification('프로젝트가 삭제되었습니다.');
+        }
+
+        function cancelDelete() {
+            document.getElementById('confirm-modal').classList.remove('show');
+            projectToDelete = null;
         }
 
         function renderAllViews() {
@@ -3035,13 +2160,11 @@
         function clearAll() {
             if (confirm('모든 프로젝트를 삭제하시겠습니까?')) {
                 projects = [];
+                nextId = 1;
                 renderAllViews();
+                autoSave(); // 자동 저장
                 showNotification('모든 프로젝트가 삭제되었습니다.');
             }
-        }
-
-        function saveData() {
-            showNotification('데이터가 저장되었습니다!');
         }
 
         function exportData() {
@@ -3062,10 +2185,12 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            renderAllViews();
+            // Firebase SDK 로딩 대기 후 초기화
+            waitForFirebase();
         });
         
-        renderAllViews();
+        // 페이지 로드 시 즉시 Firebase 대기 시작
+        waitForFirebase();
     </script>
 </body>
 </html>
