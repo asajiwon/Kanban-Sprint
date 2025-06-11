@@ -1,4 +1,4 @@
-    <!-- 확인 모달 -->
+<!-- 확인 모달 -->
     <div id="confirm-modal" class="detail-modal">
         <div class="detail-content" style="max-width: 400px;">
             <div class="detail-header">
@@ -16,90 +16,249 @@
 
     <script>
         let projects = [
-            { 
-                id: 1, 
-                title: "웹사이트 리뉴얼", 
-                status: "in-progress", 
-                progress: 70, 
-                startDate: "2024-03-15", 
-                dueDate: "2024-05-20",
-                tasks: [
-                    { id: 1, text: "디자인 시안 작성", completed: true },
-                    { id: 2, text: "프론트엔드 개발", completed: true },
-                    { id: 3, text: "백엔드 API 연동", completed: true },
-                    { id: 4, text: "테스트 및 배포", completed: false }
+            {
+                "id": 1,
+                "title": "PBI - Transportation Daily",
+                "status": "in-progress",
+                "progress": 70,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "디자인 시안 작성", "completed": true},
+                    {"id": 2, "text": "프론트엔드 개발", "completed": true},
+                    {"id": 3, "text": "백엔드 API 연동", "completed": true},
+                    {"id": 4, "text": "테스트 및 배포", "completed": false}
                 ]
             },
-            { 
-                id: 2, 
-                title: "모바일 앱 개발", 
-                status: "not-started", 
-                progress: 0, 
-                startDate: "2024-06-01", 
-                dueDate: "2024-08-15",
-                tasks: [
-                    { id: 1, text: "요구사항 분석", completed: false },
-                    { id: 2, text: "UI/UX 디자인", completed: false },
-                    { id: 3, text: "개발 및 테스트", completed: false }
+            {
+                "id": 2,
+                "title": "PBI - People Network Productivity",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-30",
+                "dueDate": "2025-07-08",
+                "tasks": [
+                    {"id": 1, "text": "요구사항 분석", "completed": false},
+                    {"id": 2, "text": "UI/UX 디자인", "completed": false},
+                    {"id": 3, "text": "개발 및 테스트", "completed": false}
                 ]
             },
-            { 
-                id: 3, 
-                title: "데이터베이스 최적화", 
-                status: "done", 
-                progress: 100, 
-                startDate: "2024-03-01", 
-                dueDate: "2024-04-15",
-                tasks: [
-                    { id: 1, text: "성능 분석", completed: true },
-                    { id: 2, text: "쿼리 최적화", completed: true },
-                    { id: 3, text: "인덱스 재구성", completed: true },
-                    { id: 4, text: "결과 검증", completed: true }
+            {
+                "id": 3,
+                "title": "업무 자동화 워크샵",
+                "status": "done",
+                "progress": 100,
+                "startDate": "2025-06-04",
+                "dueDate": "2025-06-10",
+                "tasks": [
+                    {"id": 1, "text": "성능 분석", "completed": true},
+                    {"id": 2, "text": "쿼리 최적화", "completed": true},
+                    {"id": 3, "text": "인덱스 재구성", "completed": true},
+                    {"id": 4, "text": "결과 검증", "completed": true}
                 ]
             },
-            { 
-                id: 4, 
-                title: "마케팅 캠페인", 
-                status: "in-progress", 
-                progress: 40, 
-                startDate: "2024-04-01", 
-                dueDate: "2024-07-31",
-                tasks: [
-                    { id: 1, text: "타겟 고객 분석", completed: true },
-                    { id: 2, text: "콘텐츠 제작", completed: true },
-                    { id: 3, text: "광고 집행", completed: false },
-                    { id: 4, text: "성과 측정", completed: false },
-                    { id: 5, text: "결과 보고서", completed: false }
+            {
+                "id": 4,
+                "title": "PBI - Direct Delivery",
+                "status": "in-progress",
+                "progress": 40,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "타겟 고객 분석", "completed": true},
+                    {"id": 2, "text": "콘텐츠 제작", "completed": true},
+                    {"id": 3, "text": "광고 집행", "completed": false},
+                    {"id": 4, "text": "성과 측정", "completed": false},
+                    {"id": 5, "text": "결과 보고서", "completed": false}
                 ]
             },
-            { 
-                id: 5, 
-                title: "API 개발", 
-                status: "done", 
-                progress: 100, 
-                startDate: "2024-03-10", 
-                dueDate: "2024-04-30",
-                tasks: [
-                    { id: 1, text: "API 설계", completed: true },
-                    { id: 2, text: "개발", completed: true },
-                    { id: 3, text: "테스트", completed: true }
+            {
+                "id": 5,
+                "title": "WMS 배치 조회 프로그램",
+                "status": "done",
+                "progress": 100,
+                "startDate": "2025-05-10",
+                "dueDate": "2025-05-30",
+                "tasks": [
+                    {"id": 1, "text": "API 설계", "completed": true},
+                    {"id": 2, "text": "개발", "completed": true},
+                    {"id": 3, "text": "테스트", "completed": true}
                 ]
             },
-            { 
-                id: 6, 
-                title: "보안 강화", 
-                status: "in-progress", 
-                progress: 60, 
-                startDate: "2024-05-01", 
-                dueDate: "2024-06-30",
-                tasks: [
-                    { id: 1, text: "보안 감사", completed: true },
-                    { id: 2, text: "취약점 수정", completed: false }
+            {
+                "id": 6,
+                "title": "PBI - Load Schedule",
+                "status": "in-progress",
+                "progress": 60,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "보안 감사", "completed": true},
+                    {"id": 2, "text": "취약점 수정", "completed": false}
+                ]
+            },
+            {
+                "id": 7,
+                "title": "PBI - Truck Turnover",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 8,
+                "title": "PBI - Route Efficiency",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 9,
+                "title": "공장 재고 시각화",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-09",
+                "dueDate": "2025-07-15",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 10,
+                "title": "배차 프로세스 최적화",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-17",
+                "dueDate": "2025-06-27",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 11,
+                "title": "PBI - Weight Performance",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 12,
+                "title": "운송 KPI 대시보드 전체 병합",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-17",
+                "dueDate": "2025-07-17",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 13,
+                "title": "공장 재고 분석",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-16",
+                "dueDate": "2025-06-17",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 14,
+                "title": "운송 PBI 데이터 소스 변경",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-18",
+                "dueDate": "2025-07-18",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
                 ]
             }
         ];
-        let nextId = 7;
+        let nextId = 15;
         let currentDetailProject = null;
+
+        // 브라우저 저장소 관리 (GitHub Pages 호환)
+        function saveToStorage() {
+            try {
+                // localStorage 사용 가능한지 확인
+                if (typeof(Storage) !== "undefined" && window.localStorage) {
+                    localStorage.setItem('kanban-sprint-projects', JSON.stringify(projects));
+                    localStorage.setItem('kanban-sprint-nextId', nextId.toString());
+                    console.log('데이터가 로컬 저장소에 저장되었습니다.');
+                } else {
+                    // localStorage 사용 불가능한 경우 세션 메모리에만 유지
+                    console.log('로컬 저장소를 사용할 수 없습니다. 세션 중에만 데이터가 유지됩니다.');
+                }
+            } catch (error) {
+                console.log('저장소 사용 불가:', error.message);
+                // 오류가 발생해도 앱은 계속 작동
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                if (typeof(Storage) !== "undefined" && window.localStorage) {
+                    const savedProjects = localStorage.getItem('kanban-sprint-projects');
+                    const savedNextId = localStorage.getItem('kanban-sprint-nextId');
+                    
+                    if (savedProjects) {
+                        const parsedProjects = JSON.parse(savedProjects);
+                        if (parsedProjects && parsedProjects.length > 0) {
+                            projects = parsedProjects;
+                            console.log('프로젝트 데이터가 불러와졌습니다.');
+                        }
+                    }
+                    
+                    if (savedNextId) {
+                        nextId = parseInt(savedNextId);
+                        console.log('NextId가 불러와졌습니다.');
+                    }
+                }
+            } catch (error) {
+                console.log('저장소에서 불러오기 실패:', error.message);
+                // 오류가 발생해도 기본 데이터로 계속 진행
+            }
+        }
+
+        function clearStorage() {
+            try {
+                if (typeof(Storage) !== "undefined" && window.localStorage) {
+                    localStorage.removeItem('kanban-sprint-projects');
+                    localStorage.removeItem('kanban-sprint-nextId');
+                    console.log('저장소가 초기화되었습니다.');
+                }
+            } catch (error) {
+                console.log('저장소 초기화 실패:', error.message);
+            }
+        }
 
         // 기본 함수들
         function toggleSidebar() {
@@ -218,11 +377,11 @@
             const ganttHeader = document.createElement('div');
             ganttHeader.className = 'gantt-header';
             
-            const months = ['프로젝트', '3월', '4월', '5월', '6월', '7월', '8월'];
+            const months = ['프로젝트', '6월', '7월', '8월'];
             months.forEach(month => {
                 const cell = document.createElement('div');
                 cell.className = 'gantt-header-cell';
-                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2024</div>`;
+                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2025</div>`;
                 ganttHeader.appendChild(cell);
             });
             
@@ -299,18 +458,18 @@
             if (month === startMonth && month === endMonth) {
                 const startDay = startDate.getDate();
                 const endDay = endDate.getDate();
-                const daysInMonth = new Date(2024, month, 0).getDate();
+                const daysInMonth = new Date(2025, month, 0).getDate();
                 
                 left = (startDay / daysInMonth) * 100;
                 width = ((endDay - startDay + 1) / daysInMonth) * 100;
             } else if (month === startMonth) {
                 const startDay = startDate.getDate();
-                const daysInMonth = new Date(2024, month, 0).getDate();
+                const daysInMonth = new Date(2025, month, 0).getDate();
                 left = (startDay / daysInMonth) * 100;
                 width = ((daysInMonth - startDay + 1) / daysInMonth) * 100;
             } else if (month === endMonth) {
                 const endDay = endDate.getDate();
-                const daysInMonth = new Date(2024, month, 0).getDate();
+                const daysInMonth = new Date(2025, month, 0).getDate();
                 width = (endDay / daysInMonth) * 100;
             }
             
@@ -892,18 +1051,22 @@
             renderTimeline();
             renderTable();
             renderEdit();
+            saveToStorage(); // 자동 저장
         }
 
         function clearAll() {
-            if (confirm('모든 프로젝트를 삭제하시겠습니까?')) {
+            if (confirm('모든 프로젝트를 삭제하시겠습니까? (저장된 데이터도 삭제됩니다)')) {
                 projects = [];
+                nextId = 1;
+                clearStorage();
                 renderAllViews();
-                showNotification('모든 프로젝트가 삭제되었습니다.');
+                console.log('모든 프로젝트가 삭제되었습니다.');
             }
         }
 
         function saveData() {
-            showNotification('데이터가 저장되었습니다!');
+            saveToStorage();
+            console.log('수동 저장 완료');
         }
 
         function exportData() {
@@ -924,9 +1087,12 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage(); // 저장된 데이터 불러오기
             renderAllViews();
         });
         
+        // 페이지 로드 시 즉시 실행
+        loadFromStorage();
         renderAllViews();
     </script><!DOCTYPE html>
 <html lang="ko">
@@ -1331,11 +1497,11 @@
             }
             
             .gantt-header {
-                grid-template-columns: 150px repeat(6, 80px);
+                grid-template-columns: 150px repeat(3, 80px);
             }
             
             .gantt-body {
-                grid-template-columns: 150px repeat(6, 80px);
+                grid-template-columns: 150px repeat(3, 80px);
             }
         }
 
@@ -2049,8 +2215,8 @@
                 nameCell.onclick = function() { showProjectInfoModal(project.id); };
                 row.appendChild(nameCell);
                 
-                // 월별 셀들 (3월-8월)
-                for (let month = 3; month <= 8; month++) {
+                // 월별 셀들 (6월-8월)
+                for (let month = 6; month <= 8; month++) {
                     const cell = document.createElement('div');
                     cell.className = 'gantt-cell';
                     
