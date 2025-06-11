@@ -806,6 +806,19 @@
             box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
         }
 
+        .priority-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 6px;
+            margin-bottom: 2px;
+        }
+        .priority-high { background: #fee2e2; color: #dc2626; }
+        .priority-medium { background: #fef9c3; color: #d97706; }
+        .priority-low { background: #d1fae5; color: #059669; }
+
         @media (max-width: 768px) {
             .header h1 { font-size: 1.5rem; }
             .main-content { margin-left: 60px; padding: 20px; }
@@ -937,6 +950,14 @@
                 <div class="section-title">📌 프로젝트 제목</div>
                 <input type="text" id="add-project-title" class="add-task-input" placeholder="예: 새로운 웹사이트 개발" maxlength="100">
             </div>
+            <div class="detail-section">
+                <div class="section-title">⭐ 우선순위</div>
+                <select id="add-project-priority" class="add-task-input">
+                    <option value="high">높음</option>
+                    <option value="medium" selected>중간</option>
+                    <option value="low">낮음</option>
+                </select>
+            </div>
             
             <div class="detail-section">
                 <div class="section-title">🚀 시작일</div>
@@ -1061,6 +1082,7 @@
                 "progress": 70,
                 "startDate": "2025-06-01",
                 "dueDate": "2025-06-13",
+                "priority": "high",
                 "tasks": [
                     {"id": 1, "text": "디자인 시안 작성", "completed": true},
                     {"id": 2, "text": "프론트엔드 개발", "completed": true},
@@ -1075,6 +1097,7 @@
                 "progress": 0,
                 "startDate": "2025-06-30",
                 "dueDate": "2025-07-08",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "요구사항 분석", "completed": false},
                     {"id": 2, "text": "UI/UX 디자인", "completed": false},
@@ -1088,6 +1111,7 @@
                 "progress": 100,
                 "startDate": "2025-06-04",
                 "dueDate": "2025-06-10",
+                "priority": "low",
                 "tasks": [
                     {"id": 1, "text": "성능 분석", "completed": true},
                     {"id": 2, "text": "쿼리 최적화", "completed": true},
@@ -1102,6 +1126,7 @@
                 "progress": 40,
                 "startDate": "2025-06-01",
                 "dueDate": "2025-06-13",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "타겟 고객 분석", "completed": true},
                     {"id": 2, "text": "콘텐츠 제작", "completed": true},
@@ -1117,6 +1142,7 @@
                 "progress": 100,
                 "startDate": "2025-05-10",
                 "dueDate": "2025-05-30",
+                "priority": "high",
                 "tasks": [
                     {"id": 1, "text": "API 설계", "completed": true},
                     {"id": 2, "text": "개발", "completed": true},
@@ -1130,6 +1156,7 @@
                 "progress": 60,
                 "startDate": "2025-06-01",
                 "dueDate": "2025-06-13",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "보안 감사", "completed": true},
                     {"id": 2, "text": "취약점 수정", "completed": false}
@@ -1142,6 +1169,7 @@
                 "progress": 10,
                 "startDate": "2025-06-01",
                 "dueDate": "2025-06-13",
+                "priority": "low",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1155,6 +1183,7 @@
                 "progress": 10,
                 "startDate": "2025-06-01",
                 "dueDate": "2025-06-13",
+                "priority": "low",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1168,6 +1197,7 @@
                 "progress": 0,
                 "startDate": "2025-07-09",
                 "dueDate": "2025-07-15",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1181,6 +1211,7 @@
                 "progress": 0,
                 "startDate": "2025-06-17",
                 "dueDate": "2025-06-27",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1194,6 +1225,7 @@
                 "progress": 10,
                 "startDate": "2025-06-01",
                 "dueDate": "2025-06-13",
+                "priority": "low",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1207,6 +1239,7 @@
                 "progress": 0,
                 "startDate": "2025-07-17",
                 "dueDate": "2025-07-17",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1220,6 +1253,7 @@
                 "progress": 0,
                 "startDate": "2025-06-16",
                 "dueDate": "2025-06-17",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1233,6 +1267,7 @@
                 "progress": 0,
                 "startDate": "2025-07-18",
                 "dueDate": "2025-07-18",
+                "priority": "medium",
                 "tasks": [
                     {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
                     {"id": 2, "text": "리소스 준비", "completed": false},
@@ -1435,6 +1470,16 @@
             }, 3000);
         }
 
+        // 우선순위 뱃지 생성 함수
+        function getPriorityBadge(priority) {
+            const map = {
+                high: '<span class="priority-badge priority-high">높음</span>',
+                medium: '<span class="priority-badge priority-medium">중간</span>',
+                low: '<span class="priority-badge priority-low">낮음</span>'
+            };
+            return map[priority] || '';
+        }
+
         // 렌더링 함수들
         function renderTrack() {
             const container = document.getElementById('runners-container');
@@ -1453,7 +1498,7 @@
                 runner.innerHTML = `
                     <div class="runner-icon">${icon}</div>
                     <div class="runner-info">
-                        <div class="runner-name">${project.title}</div>
+                        <div class="runner-name">${getPriorityBadge(project.priority)}${project.title}</div>
                         <div class="runner-progress">
                             <div class="progress-track">
                                 <div class="progress-fill" style="width: ${project.progress}%"></div>
@@ -1489,7 +1534,7 @@
                 const row = document.createElement('tr');
                 row.style.cursor = 'pointer';
                 row.innerHTML = `
-                    <td><strong>${project.title}</strong></td>
+                    <td><strong>${getPriorityBadge(project.priority)}${project.title}</strong></td>
                     <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -1654,7 +1699,7 @@
                     }
                     
                     card.innerHTML = `
-                        <div class="card-title">${project.title}</div>
+                        <div class="card-title">${getPriorityBadge(project.priority)}${project.title}</div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
                             <span>🚀 ${project.startDate || '미정'}</span>
                             <span>📅 ${project.dueDate}</span>
@@ -1711,53 +1756,7 @@
             });
         }
 
-        function updateProgressFromCheckbox(projectId, checkboxIndex, isChecked) {
-            const project = projects.find(p => p.id === projectId);
-            if (!project) return;
-            
-            let targetCard = null;
-            
-            document.querySelectorAll('.card').forEach(card => {
-                const titleElement = card.querySelector('.card-title');
-                if (titleElement && titleElement.textContent === project.title) {
-                    targetCard = card;
-                }
-            });
-            
-            if (targetCard) {
-                const checkboxes = targetCard.querySelectorAll('.checkboxes input[type="checkbox"]');
-                let checkedCount = 0;
-                
-                checkboxes.forEach(cb => {
-                    if (cb.checked) checkedCount++;
-                });
-                
-                const oldProgress = project.progress;
-                const oldStatus = project.status;
-                
-                project.progress = checkedCount * 10;
-                
-                if (project.progress > 0 && !project.startDate) {
-                    project.startDate = new Date().toISOString().split('T')[0];
-                }
-                
-                if (project.progress === 100) {
-                    project.status = 'done';
-                } else if (project.progress > 0) {
-                    project.status = 'in-progress';
-                } else {
-                    project.status = 'not-started';
-                }
-                
-                if (oldProgress !== project.progress || oldStatus !== project.status) {
-                    renderAllViews();
-                    autoSave();
-                    showNotification(`${project.title} 진행률: ${project.progress}%`);
-                }
-            }
-        }
-
-        // 모달 관련 함수들
+        // 프로젝트 정보 모달에도 우선순위 표시
         function showProjectInfoModal(projectId) {
             const project = projects.find(p => p.id === projectId);
             if (!project) return;
@@ -1768,6 +1767,10 @@
             
             const detailInfo = document.getElementById('detail-info');
             detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">우선순위</div>
+                    <div class="info-value">${getPriorityBadge(project.priority)}</div>
+                </div>
                 <div class="info-item">
                     <div class="info-label">상태</div>
                     <div class="info-value">
@@ -1831,6 +1834,7 @@
             document.getElementById('add-project-title').value = '';
             document.getElementById('add-project-start').value = '';
             document.getElementById('add-project-due').value = '';
+            document.getElementById('add-project-priority').value = 'medium';
             
             const initialTaskInputs = document.querySelectorAll('#initial-tasks input');
             initialTaskInputs.forEach(input => input.value = '');
@@ -1859,6 +1863,7 @@
             const title = document.getElementById('add-project-title').value.trim();
             const startDate = document.getElementById('add-project-start').value;
             const dueDate = document.getElementById('add-project-due').value;
+            const priority = document.getElementById('add-project-priority').value;
             
             if (!title) {
                 alert('프로젝트 제목을 입력해주세요.');
@@ -1907,6 +1912,7 @@
                 progress: 0,
                 startDate: startDate || '',
                 dueDate,
+                priority,
                 tasks
             };
             
@@ -1930,6 +1936,14 @@
                 <div class="info-item">
                     <div class="info-label">프로젝트명</div>
                     <input type="text" id="edit-title" class="add-task-input" value="${project.title}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">우선순위</div>
+                    <select id="edit-priority" class="add-task-input" style="margin: 0; padding: 8px;">
+                        <option value="high" ${project.priority === 'high' ? 'selected' : ''}>높음</option>
+                        <option value="medium" ${!project.priority || project.priority === 'medium' ? 'selected' : ''}>중간</option>
+                        <option value="low" ${project.priority === 'low' ? 'selected' : ''}>낮음</option>
+                    </select>
                 </div>
                 <div class="info-item">
                     <div class="info-label">상태</div>
@@ -2100,6 +2114,7 @@
             if (!currentDetailProject) return;
             
             const newTitle = document.getElementById('edit-title')?.value.trim();
+            const newPriority = document.getElementById('edit-priority')?.value;
             const newStatus = document.getElementById('edit-status')?.value;
             const newStartDate = document.getElementById('edit-start-date')?.value;
             const newDueDate = document.getElementById('edit-due-date')?.value;
@@ -2120,6 +2135,7 @@
             }
             
             currentDetailProject.title = newTitle;
+            currentDetailProject.priority = newPriority;
             currentDetailProject.status = newStatus;
             currentDetailProject.startDate = newStartDate;
             currentDetailProject.dueDate = newDueDate;
