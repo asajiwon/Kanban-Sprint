@@ -302,55 +302,62 @@
         }
 
         .gantt-chart {
-            min-width: 800px;
+            min-width: 0;
+            width: 100%;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             overflow: hidden;
             background: white;
         }
-
         .gantt-header {
             display: grid;
-            grid-template-columns: 200px repeat(6, 1fr);
+            grid-template-columns: 220px repeat(15, 1fr);
             background: linear-gradient(135deg, #f8fafc, #e2e8f0);
             border-bottom: 2px solid #e2e8f0;
         }
-
         .gantt-header-cell {
-            padding: 15px 10px;
+            padding: 10px 0;
             text-align: center;
             font-weight: 700;
             color: #1e40af;
             border-right: 1px solid #e2e8f0;
             font-size: 14px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-
         .gantt-header-cell:first-child {
-            text-align: left;
+            text-align: center;
+            justify-content: center;
+            align-items: center;
             background: #ffffff;
         }
-
+        .gantt-week-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 400;
+            margin-top: 2px;
+        }
         .gantt-body {
-            display: grid;
-            grid-template-columns: 200px repeat(6, 1fr);
+            display: flex;
+            flex-direction: column;
         }
-
         .gantt-row {
-            display: contents;
-        }
-
-        .gantt-row:hover .gantt-cell {
-            background: #f8fafc;
-        }
-
-        .gantt-cell {
-            padding: 15px 10px;
-            border-right: 1px solid #e2e8f0;
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            align-items: center;
+            min-height: 48px;
             border-bottom: 1px solid #e2e8f0;
             position: relative;
-            transition: background 0.2s ease;
         }
-
+        .gantt-cell {
+            padding: 12px 10px;
+            position: relative;
+            background: transparent;
+            min-height: 48px;
+        }
         .gantt-project-name {
             font-weight: 600;
             color: #1e293b;
@@ -359,47 +366,35 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 15px;
+            justify-content: center;
         }
-
-        .gantt-project-name:hover {
-            color: #3b82f6;
-        }
-
         .gantt-bar {
             position: absolute;
             top: 50%;
-            transform: translateY(-50%);
-            height: 24px;
-            border-radius: 12px;
+            height: 20px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 2;
         }
-
-        .gantt-bar:hover {
-            transform: translateY(-50%) scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        .gantt-bar.not-started { background: linear-gradient(135deg, #64748b, #475569); }
+        .gantt-bar.in-progress { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+        .gantt-bar.done { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .gantt-bar-label {
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 700;
         }
-
-        .gantt-bar.not-started {
-            background: linear-gradient(135deg, #64748b, #475569);
-        }
-
-        .gantt-bar.in-progress {
-            background: linear-gradient(135deg, #3b82f6, #1e40af);
-        }
-
-        .gantt-bar.done {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-        }
-
         .gantt-today-line {
             position: absolute;
             top: 0;
@@ -407,9 +402,9 @@
             width: 2px;
             background: #dc2626;
             z-index: 10;
+            left: 0;
             box-shadow: 0 0 4px rgba(220, 38, 38, 0.5);
         }
-
         .gantt-today-marker {
             position: absolute;
             top: -8px;
@@ -421,34 +416,20 @@
             border: 2px solid white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-
         .month-label {
             font-size: 12px;
             color: #64748b;
         }
 
-        /* 알림 애니메이션 */
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-
         @media (max-width: 768px) {
             .gantt-chart {
-                min-width: 600px;
+                min-width: 0;
             }
-            
             .gantt-header {
-                grid-template-columns: 150px repeat(3, 80px);
+                grid-template-columns: 120px repeat(15, 1fr);
             }
-            
-            .gantt-body {
-                grid-template-columns: 150px repeat(3, 80px);
+            .gantt-row {
+                grid-template-columns: 120px 1fr;
             }
         }
 
@@ -1560,126 +1541,150 @@
         function renderTimeline() {
             const container = document.getElementById('timeline-content');
             container.innerHTML = '';
-            
+
+            // 주차 정보 (6월: 5주, 7월: 5주, 8월: 5주)
+            const monthWeeks = { 6: 5, 7: 5, 8: 5 };
+            const weekLabels = [];
+            for (let m = 6; m <= 8; m++) {
+                for (let w = 1; w <= monthWeeks[m]; w++) {
+                    weekLabels.push({ month: m, week: w });
+                }
+            }
+
+            // 간트 차트 헤더 (한 줄)
             const ganttChart = document.createElement('div');
             ganttChart.className = 'gantt-chart';
-            
+
             const ganttHeader = document.createElement('div');
             ganttHeader.className = 'gantt-header';
-            
-            const months = ['프로젝트', '6월', '7월', '8월'];
-            months.forEach(month => {
-                const cell = document.createElement('div');
-                cell.className = 'gantt-header-cell';
-                cell.innerHTML = month === '프로젝트' ? month : `<div>${month}</div><div class="month-label">2025</div>`;
-                ganttHeader.appendChild(cell);
-            });
-            
+
+            // 첫 셀: 프로젝트 (가운데 정렬)
+            const projectCell = document.createElement('div');
+            projectCell.className = 'gantt-header-cell';
+            projectCell.innerHTML = `<div style="font-size:16px;font-weight:700;">프로젝트</div>`;
+            ganttHeader.appendChild(projectCell);
+
+            // 주차 셀: 월+주차 한 줄에
+            let weekIdx = 0;
+            for (let m = 6; m <= 8; m++) {
+                for (let w = 1; w <= monthWeeks[m]; w++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gantt-header-cell';
+                    cell.innerHTML = `<div style="font-size:13px;font-weight:700;">${m}월 ${w}주</div><div class="month-label">2025</div>`;
+                    ganttHeader.appendChild(cell);
+                    weekIdx++;
+                }
+            }
             ganttChart.appendChild(ganttHeader);
-            
+
+            // 주차별 일수 (6월: 1~4주 7일, 5주 2일, 7월: 1~4주 7일, 5주 3일, 8월: 1~4주 7일, 5주 3일)
+            const weekDays = [
+                7, 7, 7, 7, 2, // 6월 (30일)
+                7, 7, 7, 7, 3, // 7월 (31일)
+                7, 7, 7, 7, 3  // 8월 (31일)
+            ];
+            // 각 주의 시작일 인덱스 (0~91)
+            let weekStartIdx = [];
+            let idx = 0;
+            for (let i = 0; i < weekDays.length; i++) {
+                weekStartIdx.push(idx);
+                idx += weekDays[i];
+            }
+
+            // 오늘 표시용
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth() + 1;
+            const todayDay = today.getDate();
+
+            // 간트 차트 바디
             const ganttBody = document.createElement('div');
             ganttBody.className = 'gantt-body';
-            
-            const today = new Date();
-            const currentMonth = today.getMonth() + 1;
-            const currentDay = today.getDate();
-            
+
             projects.forEach(project => {
                 const row = document.createElement('div');
                 row.className = 'gantt-row';
-                
+
+                // 프로젝트명 셀
                 const nameCell = document.createElement('div');
                 nameCell.className = 'gantt-cell gantt-project-name';
                 nameCell.innerHTML = `
                     <span class="status ${project.status}" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
-                    ${project.title}
+                    ${getPriorityBadge(project.priority)}${project.title}
                 `;
                 nameCell.onclick = function() { showProjectInfoModal(project.id); };
                 row.appendChild(nameCell);
-                
-                for (let month = 6; month <= 8; month++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'gantt-cell';
-                    
-                    const projectBar = createProjectBar(project, month);
-                    if (projectBar) {
-                        cell.appendChild(projectBar);
+
+                // 타임라인 셀 (한 칸, position:relative)
+                const timelineCell = document.createElement('div');
+                timelineCell.className = 'gantt-cell';
+                timelineCell.style.position = 'relative';
+                timelineCell.style.padding = '0';
+
+                // 전체 6~8월 중 시작~끝까지의 offset/width 계산
+                if (project.startDate && project.dueDate) {
+                    const start = new Date(project.startDate);
+                    const end = new Date(project.dueDate);
+
+                    // 6~8월 범위 내로 제한
+                    const barStart = new Date(Math.max(start, new Date('2025-06-01')));
+                    const barEnd = new Date(Math.min(end, new Date('2025-08-31')));
+                    if (barStart > barEnd) {
+                        row.appendChild(timelineCell);
+                        ganttBody.appendChild(row);
+                        return;
                     }
-                    
-                    if (month === currentMonth && currentMonth >= 6 && currentMonth <= 8) {
-                        const todayLine = document.createElement('div');
-                        todayLine.className = 'gantt-today-line';
-                        const dayPercentage = (currentDay / 31) * 100;
-                        todayLine.style.left = `${dayPercentage}%`;
-                        
-                        const todayMarker = document.createElement('div');
-                        todayMarker.className = 'gantt-today-marker';
-                        todayLine.appendChild(todayMarker);
-                        
-                        cell.appendChild(todayLine);
+
+                    // 전체 6~8월을 0~91로 보고, 바 left/width 계산
+                    const getDayIndex = (date) => {
+                        const m = date.getMonth() + 1;
+                        const d = date.getDate();
+                        if (m < 6) return 0;
+                        if (m === 6) return d - 1;
+                        if (m === 7) return 30 + d - 1;
+                        if (m === 8) return 61 + d - 1;
+                        return 91;
+                    };
+                    const startIdx = getDayIndex(barStart);
+                    const endIdx = getDayIndex(barEnd);
+
+                    const leftPct = (startIdx / 92) * 100;
+                    const widthPct = ((endIdx - startIdx + 1) / 92) * 100;
+
+                    const bar = document.createElement('div');
+                    bar.className = `gantt-bar ${project.status}`;
+                    bar.style.left = `${leftPct}%`;
+                    bar.style.width = `${widthPct}%`;
+                    bar.title = `${project.title} (${project.startDate} ~ ${project.dueDate})`;
+                    bar.innerHTML = `<span class="gantt-bar-label" style="padding-left:8px;">${project.progress}%</span>`;
+                    bar.onclick = function(e) {
+                        e.stopPropagation();
+                        showProjectInfoModal(project.id);
+                    };
+                    timelineCell.appendChild(bar);
+
+                    // 오늘 표시 (해당 범위에만)
+                    if (todayYear === 2025 && todayMonth >= 6 && todayMonth <= 8) {
+                        const todayIdx = getDayIndex(today);
+                        if (todayIdx >= 0 && todayIdx <= 91) {
+                            const todayPct = (todayIdx / 92) * 100;
+                            const todayLine = document.createElement('div');
+                            todayLine.className = 'gantt-today-line';
+                            todayLine.style.left = `${todayPct}%`;
+                            const todayMarker = document.createElement('div');
+                            todayMarker.className = 'gantt-today-marker';
+                            todayLine.appendChild(todayMarker);
+                            timelineCell.appendChild(todayLine);
+                        }
                     }
-                    
-                    row.appendChild(cell);
                 }
-                
+
+                row.appendChild(timelineCell);
                 ganttBody.appendChild(row);
             });
-            
+
             ganttChart.appendChild(ganttBody);
             container.appendChild(ganttChart);
-        }
-
-        function createProjectBar(project, month) {
-            const startDate = new Date(project.startDate);
-            const endDate = new Date(project.dueDate);
-            const startMonth = startDate.getMonth() + 1;
-            const endMonth = endDate.getMonth() + 1;
-            
-            if (month < 6 || month > 8) {
-                return null;
-            }
-            
-            if (month < startMonth || month > endMonth) {
-                return null;
-            }
-            
-            const bar = document.createElement('div');
-            bar.className = `gantt-bar ${project.status}`;
-            
-            let left = 0;
-            let width = 100;
-            
-            if (month === startMonth && month === endMonth) {
-                const startDay = startDate.getDate();
-                const endDay = endDate.getDate();
-                const daysInMonth = new Date(2025, month, 0).getDate();
-                
-                left = (startDay / daysInMonth) * 100;
-                width = ((endDay - startDay + 1) / daysInMonth) * 100;
-            } else if (month === startMonth) {
-                const startDay = startDate.getDate();
-                const daysInMonth = new Date(2025, month, 0).getDate();
-                left = (startDay / daysInMonth) * 100;
-                width = ((daysInMonth - startDay + 1) / daysInMonth) * 100;
-            } else if (month === endMonth) {
-                const endDay = endDate.getDate();
-                const daysInMonth = new Date(2025, month, 0).getDate();
-                width = (endDay / daysInMonth) * 100;
-            }
-            
-            bar.style.left = `${left}%`;
-            bar.style.width = `${width}%`;
-            
-            if (month === startMonth) {
-                bar.textContent = `${project.progress}%`;
-            }
-            
-            bar.onclick = function(e) {
-                e.stopPropagation();
-                showProjectInfoModal(project.id);
-            };
-            
-            return bar;
         }
 
         function renderEdit() {
