@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Sprint</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        /* 헤더 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-toggle {
+            padding: 10px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        /* Firebase 상태 표시기 */
+        .firebase-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .firebase-status.connected {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .firebase-status.offline {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .firebase-status.loading {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        /* 사이드바 */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 80px;
+            width: 60px;
+            height: calc(100vh - 80px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            transition: width 0.3s ease;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .sidebar.expanded {
+            width: 250px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            width: 20px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .nav-text {
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.expanded .nav-text {
+            opacity: 1;
+        }
+
+        /* 메인 콘텐츠 */
+        .main-content {
+            margin-left: 60px;
+            padding: 30px;
+            min-height: calc(100vh - 80px);
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar.expanded + .main-content {
+            margin-left: 250px;
+        }
+
+        /* 스프린트 트랙 */
+        .sprint-track {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .track-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .track-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .race-track {
+            position: relative;
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 30px;
+            border: 3px dashed #e2e8f0;
+        }
+
+        .track-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 48px, #e2e8f0 48px, #e2e8f0 50px);
+            border-radius: 20px;
+        }
+
+        .runner {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .runner:hover {
+            transform: translateX(10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .runner-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .runner.status-in-progress .runner-icon {
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .runner-info { flex: 1; }
+
+        .runner-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .runner-progress {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            color: #3b82f6;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .runner-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .finish-line {
+            text-align: center;
+            padding: 20px;
+            border-top: 3px dashed #22c55e;
+            margin-top: 20px;
+            color: #22c55e;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* 간트 차트 타임라인 뷰 */
+        .timeline-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .timeline-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e40af;
+        }
+
+        .gantt-chart {
+            min-width: 0;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+        .gantt-header {
+            display: grid;
+            grid-template-columns: 220px repeat(15, 1fr);
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .gantt-header-cell {
+            padding: 10px 0;
+            text-align: center;
+            font-weight: 700;
+            color: #1e40af;
+            border-right: 1px solid #e2e8f0;
+            font-size: 14px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .gantt-header-cell:first-child {
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+            background: #ffffff;
+        }
+        .gantt-week-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+        .gantt-body {
+            display: flex;
+            flex-direction: column;
+        }
+        .gantt-row {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            align-items: center;
+            min-height: 48px;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .gantt-cell {
+            padding: 12px 10px;
+            position: relative;
+            background: transparent;
+            min-height: 48px;
+        }
+        .gantt-project-name {
+            font-weight: 600;
+            color: #1e293b;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            justify-content: center;
+        }
+        .gantt-bar {
+            position: absolute;
+            top: 50%;
+            height: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+        .gantt-bar.not-started { background: linear-gradient(135deg, #64748b, #475569); }
+        .gantt-bar.in-progress { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+        .gantt-bar.done { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .gantt-bar-label {
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .gantt-today-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dc2626;
+            z-index: 10;
+            left: 0;
+            box-shadow: 0 0 4px rgba(220, 38, 38, 0.5);
+        }
+        .gantt-today-marker {
+            position: absolute;
+            top: -8px;
+            left: -6px;
+            width: 12px;
+            height: 12px;
+            background: #dc2626;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .month-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+            .gantt-chart {
+                min-width: 0;
+            }
+            .gantt-header {
+                grid-template-columns: 120px repeat(15, 1fr);
+            }
+            .gantt-row {
+                grid-template-columns: 120px 1fr;
+            }
+        }
+
+        /* 테이블 뷰 */
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        
+        th {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            font-weight: 700;
+            color: #1e40af;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status.not-started { background: #f1f5f9; color: #64748b; }
+        .status.in-progress { background: #dbeafe; color: #3b82f6; }
+        .status.done { background: #dcfce7; color: #16a34a; }
+
+        /* 편집 보드 */
+        .edit-controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .column {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+        }
+
+        .column-header {
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .checkboxes {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .checkboxes input {
+            transform: scale(1.3);
+            accent-color: #3b82f6;
+        }
+
+        .add-card {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .add-card:hover {
+            background: #f1f5f9;
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        /* 디테일 모달 */
+        .detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .detail-modal.show {
+            display: flex;
+        }
+
+        .detail-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e40af;
+        }
+
+        .close-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .task-list {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            transform: scale(1.2);
+            accent-color: #3b82f6;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 14px;
+            color: #1e293b;
+        }
+
+        .add-task-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-task-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .progress-controls {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .progress-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#3b82f6 0deg, #3b82f6 calc(var(--progress) * 3.6deg), #e2e8f0 calc(var(--progress) * 3.6deg));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #1e40af;
+            font-size: 16px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .progress-circle::before {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .progress-circle span {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 취소 버튼 스타일 */
+        .btn-cancel {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-cancel:hover {
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 6px;
+            margin-bottom: 2px;
+        }
+        .priority-high { background: #fee2e2; color: #dc2626; }
+        .priority-medium { background: #fef9c3; color: #d97706; }
+        .priority-low { background: #d1fae5; color: #059669; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .main-content { margin-left: 60px; padding: 20px; }
+            .sidebar.expanded + .main-content { margin-left: 60px; }
+            .board { grid-template-columns: 1fr; }
+            .detail-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <h1>🏃‍♂️ Kanban Sprint</h1>
+        <button class="nav-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+
+    <!-- Firebase 상태 표시기 -->
+    <div id="firebase-status" class="firebase-status loading">
+        <span class="status-icon">⏳</span>
+        <span class="status-text">연결 중...</span>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="nav-item active" onclick="showView('track')">
+            <div class="nav-icon">🏁</div>
+            <div class="nav-text">스프린트 트랙</div>
+        </div>
+        <div class="nav-item" onclick="showView('todo')">
+            <div class="nav-icon">📝</div>
+            <div class="nav-text">To-Do List</div>
+        </div>
+        <div class="nav-item" onclick="showView('timeline')">
+            <div class="nav-icon">📅</div>
+            <div class="nav-text">타임라인</div>
+        </div>
+        <div class="nav-item" onclick="showView('table')">
+            <div class="nav-icon">📊</div>
+            <div class="nav-text">전체 프로젝트</div>
+        </div>
+        <div class="nav-item" onclick="showView('edit')">
+            <div class="nav-icon">⚡</div>
+            <div class="nav-text">편집</div>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+        <!-- 스프린트 트랙 뷰 -->
+        <div id="track-view" class="view active">
+            <!-- Updates Section (이동) -->
+            <div id="recent-updates" style="background:rgba(255,255,255,0.95);border-radius:16px;padding:18px 24px;margin-bottom:24px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+                <div style="font-weight:700;color:#1e40af;margin-bottom:8px;">Updates</div>
+                <ul id="recent-updates-list" style="list-style:none;padding-left:0;margin:0;"></ul>
+            </div>
+            <div class="sprint-track">
+                <div class="track-header">
+                    <div class="track-title">🏁 Sprint Track</div>
+                </div>
+                <div class="race-track">
+                    <div class="track-lines"></div>
+                    <div id="runners-container"></div>
+                </div>
+                <div class="finish-line">🏆 FINISH LINE 🏆</div>
+            </div>
+        </div>
+
+        <!-- To-Do List View -->
+        <div id="todo-view" class="view">
+            <div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:32px 24px;max-width:600px;margin:0 auto 32px auto;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+                <div style="font-weight:700;color:#1e40af;font-size:1.3rem;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1.5rem;">📝</span> To-Do List
+                </div>
+                <div style="margin-bottom:18px;display:flex;gap:8px;">
+                    <input id="todo-input" type="text" placeholder="할 일 추가..." style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;font-size:15px;">
+                    <button onclick="addTodo()" style="padding:10px 18px;border-radius:8px;border:none;background:#3b82f6;color:white;font-size:15px;cursor:pointer;">+</button>
+                </div>
+                <ul id="todo-list" style="list-style:none;padding:0;margin:0;"></ul>
+            </div>
+        </div>
+
+        <!-- 타임라인 뷰 -->
+        <div id="timeline-view" class="view">
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <div class="timeline-title">📅 프로젝트 간트 차트</div>
+                </div>
+                <div class="timeline-content" id="timeline-content">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+        </div>
+
+        <div id="table-view" class="view">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>프로젝트명</th>
+                            <th>상태</th>
+                            <th>진행률</th>
+                            <th>착수일</th>
+                            <th>마감일</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 편집 뷰 -->
+        <div id="edit-view" class="view">
+            <div class="edit-controls">
+                <button class="btn" onclick="showAddModal()">➕ 프로젝트 추가</button>
+                <button class="btn" onclick="clearAll()">🗑️ 전체 삭제</button>
+                <button class="btn" onclick="saveToFirebase()">☁️ 수동 저장</button>
+                <button class="btn" onclick="exportData()">📤 내보내기</button>
+                <button class="btn" onclick="importData()">📥 가져오기</button>
+            </div>
+            
+            <div class="board">
+                <div class="column">
+                    <div class="column-header">🏃‍♂️ 대기 중</div>
+                    <div id="not-started"></div>
+                    <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
+                </div>
+                <div class="column">
+                    <div class="column-header">⚡ 달리는 중</div>
+                    <div id="in-progress"></div>
+                    <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
+                </div>
+                <div class="column">
+                    <div class="column-header">🏆 완료</div>
+                    <div id="done"></div>
+                    <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로젝트 추가 모달 -->
+    <div id="add-modal" class="detail-modal">
+        <div class="detail-content">
+            <div class="detail-header">
+                <div class="detail-title">➕ 새 프로젝트 추가</div>
+                <button class="close-btn" onclick="hideAddModal()">✕</button>
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">📌 프로젝트 제목</div>
+                <input type="text" id="add-project-title" class="add-task-input" placeholder="예: 새로운 웹사이트 개발" maxlength="100">
+            </div>
+            <div class="detail-section">
+                <div class="section-title">⭐ 우선순위</div>
+                <select id="add-project-priority" class="add-task-input">
+                    <option value="high">높음</option>
+                    <option value="medium" selected>중간</option>
+                    <option value="low">낮음</option>
+                </select>
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">🚀 시작일</div>
+                <input type="date" id="add-project-start" class="add-task-input">
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">📅 마감일</div>
+                <input type="date" id="add-project-due" class="add-task-input">
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">📝 초기 태스크 (선택사항)</div>
+                <div id="initial-tasks">
+                    <div class="task-item">
+                        <input type="text" class="add-task-input" placeholder="예: 프로젝트 계획 수립" style="margin-top: 0;">
+                    </div>
+                    <div class="task-item">
+                        <input type="text" class="add-task-input" placeholder="예: 리소스 준비" style="margin-top: 8px;">
+                    </div>
+                    <div class="task-item">
+                        <input type="text" class="add-task-input" placeholder="예: 실행 및 모니터링" style="margin-top: 8px;">
+                    </div>
+                </div>
+                <button class="btn" style="margin-top: 15px; padding: 8px 15px; font-size: 12px;" onclick="addInitialTask()">+ 태스크 추가</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn" style="flex: 1;" onclick="submitNewProject()">✅ 프로젝트 생성</button>
+                <button class="btn btn-cancel" style="flex: 1;" onclick="hideAddModal()">❌ 취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 디테일 모달 -->
+    <div id="detail-modal" class="detail-modal">
+        <div class="detail-content">
+            <div class="detail-header">
+                <div class="detail-title" id="detail-project-title">프로젝트 상세</div>
+                <button class="close-btn" onclick="hideDetailModal()">✕</button>
+            </div>
+
+            <div class="detail-section">
+                <div class="section-title">📊 프로젝트 정보</div>
+                <div class="detail-info" id="detail-info">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <div class="section-title">📊 진행률</div>
+                <div class="progress-controls">
+                    <div class="progress-display">
+                        <div class="progress-circle" id="detail-progress-circle">0%</div>
+                        <div>
+                            <div class="checkboxes" id="detail-checkboxes">
+                                <!-- 동적 생성 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <div class="section-title">📋 세부 태스크</div>
+                <div class="task-list" id="detail-tasks">
+                    <!-- 동적 생성 -->
+                </div>
+                <input type="text" class="add-task-input" placeholder="새 태스크 입력 후 Enter..." id="new-task-input">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button class="btn" style="flex: 1;" onclick="saveDetailChanges()">💾 저장</button>
+                <button class="btn btn-cancel" style="flex: 1;" onclick="deleteProjectFromDetail()">🗑️ 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 확인 모달 -->
+    <div id="confirm-modal" class="detail-modal">
+        <div class="detail-content" style="max-width: 400px;">
+            <div class="detail-header">
+                <div class="detail-title">🗑️ 프로젝트 삭제</div>
+            </div>
+            <div style="padding: 20px 0; text-align: center;">
+                <div id="confirm-message" style="font-size: 16px; color: #1e293b; margin-bottom: 20px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-cancel" style="flex: 1;" onclick="cancelDelete()">취소</button>
+                    <button class="btn" style="flex: 1; background: linear-gradient(135deg, #dc2626, #b91c1c);" onclick="confirmDelete()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 파일 입력 (숨김) -->
+    <input type="file" id="file-input" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+
+    <!-- Firebase SDK v9 CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Firebase 설정 및 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyDx6UqoMMyo-JexUkWfXs7W_cz7rsUIl04",
+            authDomain: "kanban-sprint.firebaseapp.com",
+            projectId: "kanban-sprint",
+            storageBucket: "kanban-sprint.firebasestorage.app",
+            messagingSenderId: "142357228665",
+            appId: "1:142357228665:web:4dee892d322478d97d38a8",
+            measurementId: "G-0FER7QK4X7"
+        };
+
+        // 전역 변수들
+        let db = null;
+        let isFirebaseReady = false;
+        let projects = [
+            {
+                "id": 1,
+                "title": "PBI - Transportation Daily",
+                "status": "in-progress",
+                "progress": 70,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "priority": "high",
+                "tasks": [
+                    {"id": 1, "text": "디자인 시안 작성", "completed": true},
+                    {"id": 2, "text": "프론트엔드 개발", "completed": true},
+                    {"id": 3, "text": "백엔드 API 연동", "completed": true},
+                    {"id": 4, "text": "테스트 및 배포", "completed": false}
+                ]
+            },
+            {
+                "id": 2,
+                "title": "PBI - People Network Productivity",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-30",
+                "dueDate": "2025-07-08",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "요구사항 분석", "completed": false},
+                    {"id": 2, "text": "UI/UX 디자인", "completed": false},
+                    {"id": 3, "text": "개발 및 테스트", "completed": false}
+                ]
+            },
+            {
+                "id": 3,
+                "title": "업무 자동화 워크샵",
+                "status": "done",
+                "progress": 100,
+                "startDate": "2025-06-04",
+                "dueDate": "2025-06-10",
+                "priority": "low",
+                "tasks": [
+                    {"id": 1, "text": "성능 분석", "completed": true},
+                    {"id": 2, "text": "쿼리 최적화", "completed": true},
+                    {"id": 3, "text": "인덱스 재구성", "completed": true},
+                    {"id": 4, "text": "결과 검증", "completed": true}
+                ]
+            },
+            {
+                "id": 4,
+                "title": "PBI - Direct Delivery",
+                "status": "in-progress",
+                "progress": 40,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "타겟 고객 분석", "completed": true},
+                    {"id": 2, "text": "콘텐츠 제작", "completed": true},
+                    {"id": 3, "text": "광고 집행", "completed": false},
+                    {"id": 4, "text": "성과 측정", "completed": false},
+                    {"id": 5, "text": "결과 보고서", "completed": false}
+                ]
+            },
+            {
+                "id": 5,
+                "title": "WMS 배치 조회 프로그램",
+                "status": "done",
+                "progress": 100,
+                "startDate": "2025-05-10",
+                "dueDate": "2025-05-30",
+                "priority": "high",
+                "tasks": [
+                    {"id": 1, "text": "API 설계", "completed": true},
+                    {"id": 2, "text": "개발", "completed": true},
+                    {"id": 3, "text": "테스트", "completed": true}
+                ]
+            },
+            {
+                "id": 6,
+                "title": "PBI - Load Schedule",
+                "status": "in-progress",
+                "progress": 60,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "보안 감사", "completed": true},
+                    {"id": 2, "text": "취약점 수정", "completed": false}
+                ]
+            },
+            {
+                "id": 7,
+                "title": "PBI - Truck Turnover",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "priority": "low",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 8,
+                "title": "PBI - Route Efficiency",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "priority": "low",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 9,
+                "title": "공장 재고 시각화",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-09",
+                "dueDate": "2025-07-15",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 10,
+                "title": "배차 프로세스 최적화",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-17",
+                "dueDate": "2025-06-27",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 11,
+                "title": "PBI - Weight Performance",
+                "status": "in-progress",
+                "progress": 10,
+                "startDate": "2025-06-01",
+                "dueDate": "2025-06-13",
+                "priority": "low",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 12,
+                "title": "운송 KPI 대시보드 전체 병합",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-17",
+                "dueDate": "2025-07-17",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 13,
+                "title": "공장 재고 분석",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-06-16",
+                "dueDate": "2025-06-17",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            },
+            {
+                "id": 14,
+                "title": "운송 PBI 데이터 소스 변경",
+                "status": "not-started",
+                "progress": 0,
+                "startDate": "2025-07-18",
+                "dueDate": "2025-07-18",
+                "priority": "medium",
+                "tasks": [
+                    {"id": 1, "text": "프로젝트 계획 수립", "completed": false},
+                    {"id": 2, "text": "리소스 준비", "completed": false},
+                    {"id": 3, "text": "실행 및 모니터링", "completed": false}
+                ]
+            }
+        ];
+        let nextId = 15;
+        let currentDetailProject = null;
+        let projectToDelete = null;
+
+        // Firebase 초기화
+        function initFirebase() {
+            try {
+                // Firebase v9 compat에서는 firebase.apps가 항상 있음
+                if (window.firebase && firebase.apps && firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                isFirebaseReady = true;
+                console.log('✅ Firebase 초기화 성공');
+                updateFirebaseStatus('connected');
+                loadFromFirebase();
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+                isFirebaseReady = false;
+                updateFirebaseStatus('offline');
+                showNotification('⚠️ 오프라인 모드로 시작');
+                renderAllViews();
+            }
+        }
+
+        // Firebase 상태 업데이트
+        function updateFirebaseStatus(status) {
+            const statusEl = document.getElementById('firebase-status');
+            if (!statusEl) return;
+            statusEl.className = 'firebase-status ' + status;
+            const statusText = statusEl.querySelector('.status-text');
+            const statusIcon = statusEl.querySelector('.status-icon');
+            switch(status) {
+                case 'connected':
+                    statusIcon.textContent = '✅';
+                    statusText.textContent = 'Firebase 연결됨';
+                    break;
+                case 'offline':
+                    statusIcon.textContent = '🔴';
+                    statusText.textContent = '오프라인 모드';
+                    break;
+                case 'loading':
+                    statusIcon.textContent = '⏳';
+                    statusText.textContent = '연결 중...';
+                    break;
+            }
+        }
+
+        // Firebase 저장
+        async function saveToFirebase() {
+            if (!isFirebaseReady || !db) {
+                console.log('Firebase 사용 불가 - 오프라인 모드');
+                showNotification('⚠️ 오프라인 모드 - 로컬에서만 저장됨');
+                return;
+            }
+
+            try {
+                updateFirebaseStatus('loading');
+                
+                // 기존 문서들 삭제
+                const querySnapshot = await db.collection('projects').get();
+                const batch = db.batch();
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                
+                // 새 프로젝트들 저장
+                const saveBatch = db.batch();
+                projects.forEach((project, index) => {
+                    const docRef = db.collection('projects').doc(String(project.id));
+                    saveBatch.set(docRef, project);
+                });
+                await saveBatch.commit();
+                
+                console.log('✅ Firebase 저장 완료');
+                updateFirebaseStatus('connected');
+                showNotification('✅ 클라우드에 저장 완료!');
+            } catch (error) {
+                console.error('❌ Firebase 저장 실패:', error);
+                updateFirebaseStatus('offline');
+                showNotification(`❌ 저장 실패: ${error.message}`);
+            }
+        }
+
+        // Firebase에서 불러오기
+        async function loadFromFirebase() {
+            if (!isFirebaseReady || !db) {
+                console.log('Firebase 사용 불가 - 기본 데이터 사용');
+                updateFirebaseStatus('offline');
+                renderAllViews();
+                return;
+            }
+
+            try {
+                updateFirebaseStatus('loading');
+                
+                const querySnapshot = await db.collection('projects').get();
+                const firebaseProjects = [];
+                
+                querySnapshot.forEach((doc) => {
+                    firebaseProjects.push({ ...doc.data(), firebaseId: doc.id });
+                });
+
+                if (firebaseProjects.length > 0) {
+                    projects = firebaseProjects;
+                    nextId = Math.max(...projects.map(p => p.id || 0), 0) + 1;
+                    console.log(`✅ Firebase에서 ${projects.length}개 프로젝트 로드`);
+                    updateFirebaseStatus('connected');
+                    showNotification(`📥 ${projects.length}개 프로젝트 로드됨`);
+                } else {
+                    console.log('Firebase에 데이터 없음 - 기본 데이터로 초기화');
+                    await saveToFirebase();
+                }
+                
+                renderAllViews();
+            } catch (error) {
+                console.error('❌ Firebase 로드 실패:', error);
+                updateFirebaseStatus('offline');
+                showNotification(`⚠️ 로드 실패: ${error.message}`);
+                renderAllViews();
+            }
+        }
+
+        // 안전하게 renderAllViews 호출 (존재하지 않을 경우 무시)
+        function safeRenderAllViews() {
+            if (typeof renderAllViews === "function") {
+                renderAllViews();
+            }
+        }
+
+        // 자동 저장
+        function autoSave() {
+            if (!isFirebaseReady) {
+                console.log('Firebase 비활성화 - 자동저장 건너뜀');
+                return;
+            }
+            
+            clearTimeout(autoSave.timeout);
+            autoSave.timeout = setTimeout(() => {
+                saveToFirebase();
+            }, 2000);
+        }
+
+        // 기본 함수들
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('expanded');
+        }
+
+        function showView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewName + '-view').classList.add('active');
+            
+            if (viewName === 'track') renderTrack();
+            else if (viewName === 'timeline') renderTimeline();
+            else if (viewName === 'table') renderTable();
+            else if (viewName === 'edit') renderEdit();
+            else if (viewName === 'todo') renderTodos();
+        }
+
+        function getStatusText(status) {
+            const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
+            return map[status] || status;
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #22c55e, #16a34a);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-weight: 600;
+                font-size: 14px;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            if (message.includes('❌') || message.includes('⚠️')) {
+                notification.style.background = 'linear-gradient(135deg, #dc2626, #b91c1c)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 우선순위 뱃지 생성 함수
+        function getPriorityBadge(priority) {
+            const map = {
+                high: '<span class="priority-badge priority-high">높음</span>',
+                medium: '<span class="priority-badge priority-medium">중간</span>',
+                low: '<span class="priority-badge priority-low">낮음</span>'
+            };
+            return map[priority] || '';
+        }
+
+        // 렌더링 함수들
+        function renderAllViews() {
+            renderTrack();
+            renderTimeline();
+            renderTable();
+            renderEdit();
+            renderTodos(); // To-Do도 항상 동기화
+        }
+
+        function renderTrack() {
+            const container = document.getElementById('runners-container');
+            container.innerHTML = '';
+
+            const activeProjects = projects.filter(p => p.status !== 'done').sort((a, b) => b.progress - a.progress);
+
+            activeProjects.forEach((project, index) => {
+                const runner = document.createElement('div');
+                runner.className = `runner status-${project.status}`;
+                runner.style.cursor = 'pointer';
+                
+                const runnerIcons = ['🏃‍♂️', '🏃‍♀️', '🚀', '⚡'];
+                const icon = runnerIcons[index % runnerIcons.length];
+                
+                runner.innerHTML = `
+                    <div class="runner-icon">${icon}</div>
+                    <div class="runner-info">
+                        <div class="runner-name">${getPriorityBadge(project.priority)}${project.title}</div>
+                        <div class="runner-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <div class="progress-percentage">${project.progress}%</div>
+                        </div>
+                        <div class="runner-meta">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                            <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                runner.onclick = function() { showProjectInfoModal(project.id); };
+                container.appendChild(runner);
+            });
+
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const allProjects = [...projects].sort((a, b) => {
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+
+            allProjects.forEach(project => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.innerHTML = `
+                    <td><strong>${getPriorityBadge(project.priority)}${project.title}</strong></td>
+                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="progress-track" style="flex: 1; height: 6px;">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                            <strong>${project.progress}%</strong>
+                        </div>
+                    </td>
+                    <td>${project.startDate || '미정'}</td>
+                    <td>${project.dueDate}</td>
+                `;
+                
+                row.onclick = function() { showProjectInfoModal(project.id); };
+                tbody.appendChild(row);
+            });
+
+            if (allProjects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">프로젝트가 없습니다!</td></tr>';
+            }
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('timeline-content');
+            container.innerHTML = '';
+
+            // 주차 정보 (6월: 5주, 7월: 5주, 8월: 5주)
+            const monthWeeks = { 6: 5, 7: 5, 8: 5 };
+            const weekLabels = [];
+            for (let m = 6; m <= 8; m++) {
+                for (let w = 1; w <= monthWeeks[m]; w++) {
+                    weekLabels.push({ month: m, week: w });
+                }
+            }
+
+            // 간트 차트 헤더 (한 줄)
+            const ganttChart = document.createElement('div');
+            ganttChart.className = 'gantt-chart';
+
+            const ganttHeader = document.createElement('div');
+            ganttHeader.className = 'gantt-header';
+
+            // 첫 셀: 프로젝트 (가운데 정렬)
+            const projectCell = document.createElement('div');
+            projectCell.className = 'gantt-header-cell';
+            projectCell.innerHTML = `<div style="font-size:16px;font-weight:700;">프로젝트</div>`;
+            ganttHeader.appendChild(projectCell);
+
+            // 주차 셀: 월+주차 한 줄에
+            let weekIdx = 0;
+            for (let m = 6; m <= 8; m++) {
+                for (let w = 1; w <= monthWeeks[m]; w++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gantt-header-cell';
+                    cell.innerHTML = `<div style="font-size:13px;font-weight:700;">${m}월 ${w}주</div><div class="month-label">2025</div>`;
+                    ganttHeader.appendChild(cell);
+                    weekIdx++;
+                }
+            }
+            ganttChart.appendChild(ganttHeader);
+
+            // 주차별 일수 (6월: 1~4주 7일, 5주 2일, 7월: 1~4주 7일, 5주 3일, 8월: 1~4주 7일, 5주 3일)
+            const weekDays = [
+                7, 7, 7, 7, 2, // 6월 (30일)
+                7, 7, 7, 7, 3, // 7월 (31일)
+                7, 7, 7, 7, 3  // 8월 (31일)
+            ];
+            // 각 주의 시작일 인덱스 (0~91)
+            let weekStartIdx = [];
+            let idx = 0;
+            for (let i = 0; i < weekDays.length; i++) {
+                weekStartIdx.push(idx);
+                idx += weekDays[i];
+            }
+
+            // 오늘 표시용
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth() + 1;
+            const todayDay = today.getDate();
+
+            // 간트 차트 바디
+            const ganttBody = document.createElement('div');
+            ganttBody.className = 'gantt-body';
+
+            projects.forEach(project => {
+                const row = document.createElement('div');
+                row.className = 'gantt-row';
+
+                // 프로젝트명 셀
+                const nameCell = document.createElement('div');
+                nameCell.className = 'gantt-cell gantt-project-name';
+                nameCell.innerHTML = `
+                    <span class="status ${project.status}" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;"></span>
+                    ${getPriorityBadge(project.priority)}${project.title}
+                `;
+                nameCell.onclick = function() { showProjectInfoModal(project.id); };
+                row.appendChild(nameCell);
+
+                // 타임라인 셀 (한 칸, position:relative)
+                const timelineCell = document.createElement('div');
+                timelineCell.className = 'gantt-cell';
+                timelineCell.style.position = 'relative';
+                timelineCell.style.padding = '0';
+
+                // 전체 6~8월 중 시작~끝까지의 offset/width 계산
+                if (project.startDate && project.dueDate) {
+                    const start = new Date(project.startDate);
+                    const end = new Date(project.dueDate);
+
+                    // 6~8월 범위 내로 제한
+                    const barStart = new Date(Math.max(start, new Date('2025-06-01')));
+                    const barEnd = new Date(Math.min(end, new Date('2025-08-31')));
+                    if (barStart > barEnd) {
+                        row.appendChild(timelineCell);
+                        ganttBody.appendChild(row);
+                        return;
+                    }
+
+                    // 전체 6~8월을 0~91로 보고, 바 left/width 계산
+                    const getDayIndex = (date) => {
+                        const m = date.getMonth() + 1;
+                        const d = date.getDate();
+                        if (m < 6) return 0;
+                        if (m === 6) return d - 1;
+                        if (m === 7) return 30 + d - 1;
+                        if (m === 8) return 61 + d - 1;
+                        return 91;
+                    };
+                    const startIdx = getDayIndex(barStart);
+                    const endIdx = getDayIndex(barEnd);
+
+                    const leftPct = (startIdx / 92) * 100;
+                    const widthPct = ((endIdx - startIdx + 1) / 92) * 100;
+
+                    const bar = document.createElement('div');
+                    bar.className = `gantt-bar ${project.status}`;
+                    bar.style.left = `${leftPct}%`;
+                    bar.style.width = `${widthPct}%`;
+                    bar.title = `${project.title} (${project.startDate} ~ ${project.dueDate})`;
+                    bar.innerHTML = `<span class="gantt-bar-label" style="padding-left:8px;">${project.progress}%</span>`;
+                    bar.onclick = function(e) {
+                        e.stopPropagation();
+                        showProjectInfoModal(project.id);
+                    };
+                    timelineCell.appendChild(bar);
+
+                    // 오늘 표시 (해당 범위에만)
+                    if (todayYear === 2025 && todayMonth >= 6 && todayMonth <= 8) {
+                        const todayIdx = getDayIndex(today);
+                        if (todayIdx >= 0 && todayIdx <= 91) {
+                            const todayPct = (todayIdx / 92) * 100;
+                            const todayLine = document.createElement('div');
+                            todayLine.className = 'gantt-today-line';
+                            todayLine.style.left = `${todayPct}%`;
+                            const todayMarker = document.createElement('div');
+                            todayMarker.className = 'gantt-today-marker';
+                            todayLine.appendChild(todayMarker);
+                            timelineCell.appendChild(todayLine);
+                        }
+                    }
+                }
+
+                row.appendChild(timelineCell);
+                ganttBody.appendChild(row);
+            });
+
+            ganttChart.appendChild(ganttBody);
+            container.appendChild(ganttChart);
+        }
+
+        function renderEdit() {
+            ['not-started', 'in-progress', 'done'].forEach(status => {
+                const container = document.getElementById(status);
+                container.innerHTML = '';
+                
+                projects.filter(p => p.status === status).forEach(project => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.cursor = 'pointer';
+                    
+                    let checkboxes = '';
+                    for (let i = 0; i < 10; i++) {
+                        const checked = (project.progress / 10) > i ? 'checked' : '';
+                        checkboxes += `<input type="checkbox" ${checked}>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="card-title">${getPriorityBadge(project.priority)}${project.title}</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
+                            <span>🚀 ${project.startDate || '미정'}</span>
+                            <span>📅 ${project.dueDate}</span>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
+                            진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
+                        </div>
+                        <div class="checkboxes">${checkboxes}</div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: ${project.progress}%"></div>
+                        </div>
+                        <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;">
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', (e) => {
+                        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') {
+                            return;
+                        }
+                        showDetailModal(project.id);
+                    });
+                    
+                    const buttonContainer = card.querySelector('.button-container');
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = '✏️ 편집';
+                    editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDetailModal(project.id);
+                    });
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '🗑️ 삭제';
+                    deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteProject(project.id);
+                    });
+                    
+                    buttonContainer.appendChild(editBtn);
+                    buttonContainer.appendChild(deleteBtn);
+                    
+                    const checkboxElements = card.querySelectorAll('.checkboxes input[type="checkbox"]');
+                    checkboxElements.forEach((checkbox, index) => {
+                        checkbox.addEventListener('change', (e) => {
+                            e.stopPropagation();
+                            updateProgressFromCheckbox(project.id, index, checkbox.checked);
+                        });
+                    });
+                    
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        // 프로젝트 정보 모달에도 우선순위 표시
+        function showProjectInfoModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            document.getElementById('detail-project-title').textContent = project.title;
+            
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">우선순위</div>
+                    <div class="info-value">${getPriorityBadge(project.priority)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <div class="info-value">
+                        <span class="status ${project.status}">${getStatusText(project.status)}</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <div class="info-value">${project.startDate || '미정'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <div class="info-value">${project.dueDate}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">태스크 완료</div>
+                    <div class="info-value">${project.tasks.filter(t => t.completed).length}/${project.tasks.length}</div>
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = `<div style="font-size: 32px; font-weight: bold; color: #3b82f6; text-align: center; padding: 20px;">${project.progress}%</div>`;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            let tasksHtml = '';
+            
+            project.tasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+                        <div class="task-text">${task.text}</div>
+                    </div>
+                `;
+            });
+            
+            tasksContainer.innerHTML = tasksHtml;
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'none';
+            
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'block';
+            buttonArea.style.marginTop = '25px';
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn';
+            closeBtn.style.width = '100%';
+            closeBtn.textContent = '닫기';
+            closeBtn.onclick = function() { hideDetailModal(); };
+            
+            buttonArea.appendChild(closeBtn);
+        }
+
+        function showAddModal() {
+            document.getElementById('add-modal').classList.add('show');
+            document.getElementById('add-project-title').value = '';
+            document.getElementById('add-project-start').value = '';
+            document.getElementById('add-project-due').value = '';
+            document.getElementById('add-project-priority').value = 'medium';
+            
+            const initialTaskInputs = document.querySelectorAll('#initial-tasks input');
+            initialTaskInputs.forEach(input => input.value = '');
+            
+            const taskItems = document.querySelectorAll('#initial-tasks .task-item');
+            for (let i = 3; i < taskItems.length; i++) {
+                taskItems[i].remove();
+            }
+            
+            setTimeout(() => document.getElementById('add-project-title').focus(), 100);
+        }
+
+        function hideAddModal() {
+            document.getElementById('add-modal').classList.remove('show');
+        }
+
+        function addInitialTask() {
+            const container = document.getElementById('initial-tasks');
+            const taskItem = document.createElement('div class="task-item";
+            taskItem.innerHTML = '<input type="text" class="add-task-input" placeholder="새로운 태스크" style="margin-top: 8px;">';
+            container.appendChild(taskItem);
+        }
+
+        function submitNewProject() {
+            const title = document.getElementById('add-project-title').value.trim();
+
+            const startDate = document.getElementById('add-project-start').value;
+            const dueDate = document.getElementById('add-project-due').value;
+            const priority = document.getElementById('add-project-priority').value;
+            
+            if (!title) {
+                alert('프로젝트 제목을 입력해주세요.');
+                document.getElementById('add-project-title').focus();
+                return;
+            }
+            
+            if (!dueDate) {
+                alert('마감일을 선택해주세요.');
+                document.getElementById('add-project-due').focus();
+                return;
+            }
+            
+            if (startDate && new Date(startDate) > new Date(dueDate)) {
+                alert('시작일이 마감일보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            const taskInputs = document.querySelectorAll('#initial-tasks input');
+            const tasks = [];
+            let taskId = 1;
+            
+            taskInputs.forEach(input => {
+                const taskText = input.value.trim();
+                if (taskText) {
+                    tasks.push({
+                        id: taskId++,
+                        text: taskText,
+                        completed: false
+                    });
+                }
+            });
+            
+            if (tasks.length === 0) {
+                tasks.push(
+                    { id: 1, text: '프로젝트 계획 수립', completed: false },
+                    { id: 2, text: '리소스 준비', completed: false },
+                    { id: 3, text: '실행 및 모니터링', completed: false }
+                );
+            }
+            
+            const newProject = {
+                id: nextId++,
+                title,
+                status: 'not-started',
+                progress: 0,
+                startDate: startDate || '',
+                dueDate,
+                priority,
+                tasks
+            };
+            
+            projects.push(newProject);
+            renderAllViews();
+            autoSave();
+            hideAddModal();
+            showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
+            addRecentUpdate(newProject, '추가', 'project');
+            syncTodosWithProjects();
+        }
+
+        function showDetailModal(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            currentDetailProject = project;
+            
+            document.getElementById('detail-project-title').textContent = project.title + ' (편집)';
+            
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">프로젝트명</div>
+                    <input type="text" id="edit-title" class="add-task-input" value="${project.title}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">우선순위</div>
+                    <select id="edit-priority" class="add-task-input" style="margin: 0; padding: 8px;">
+                        <option value="high" ${project.priority === 'high' ? 'selected' : ''}>높음</option>
+                        <option value="medium" ${!project.priority || project.priority === 'medium' ? 'selected' : ''}>중간</option>
+                        <option value="low" ${project.priority === 'low' ? 'selected' : ''}>낮음</option>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">상태</div>
+                    <select id="edit-status" class="add-task-input" style="margin: 0; padding: 8px;">
+                        <option value="not-started" ${project.status === 'not-started' ? 'selected' : ''}>대기 중</option>
+                        <option value="in-progress" ${project.status === 'in-progress' ? 'selected' : ''}>진행 중</option>
+                        <option value="done" ${project.status === 'done' ? 'selected' : ''}>완료</option>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">착수일</div>
+                    <input type="date" id="edit-start-date" class="add-task-input" value="${project.startDate}" style="margin: 0; padding: 8px;">
+                </div>
+                <div class="info-item">
+                    <div class="info-label">마감일</div>
+                    <input type="date" id="edit-due-date" class="add-task-input" value="${project.dueDate}" style="margin: 0; padding: 8px;">
+                </div>
+            `;
+            
+            updateDetailProgress(project.progress);
+            
+            const checkboxContainer = document.getElementById('detail-checkboxes');
+            checkboxContainer.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = (project.progress / 10) > i;
+                checkbox.addEventListener('change', () => updateDetailProgressFromCheckbox());
+                checkboxContainer.appendChild(checkbox);
+            }
+            
+            renderDetailTasks();
+            
+            document.getElementById('detail-modal').classList.add('show');
+            
+            const newTaskInput = document.getElementById('new-task-input');
+            newTaskInput.style.display = 'block';
+            newTaskInput.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    addNewTask();
+                }
+            };
+            
+            const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
+            buttonArea.innerHTML = '';
+            buttonArea.style.display = 'flex';
+            buttonArea.style.gap = '10px';
+            buttonArea.style.marginTop = '25px';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'btn';
+            saveBtn.style.flex = '1';
+            saveBtn.textContent = '💾 저장';
+            saveBtn.addEventListener('click', () => saveDetailChanges());
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-cancel';
+            deleteBtn.style.flex = '1';
+            deleteBtn.textContent = '🗑️ 삭제';
+            deleteBtn.addEventListener('click', () => deleteProjectFromDetail());
+            
+            buttonArea.appendChild(saveBtn);
+            buttonArea.appendChild(deleteBtn);
+        }
+
+        function hideDetailModal() {
+            document.getElementById('detail-modal').classList.remove('show');
+            currentDetailProject = null;
+        }
+
+        function updateDetailProgress(progress) {
+            const circle = document.getElementById('detail-progress-circle');
+            circle.style.setProperty('--progress', progress);
+            circle.innerHTML = `<span>${progress}%</span>`;
+        }
+
+        function updateDetailProgressFromCheckbox() {
+            if (!currentDetailProject) return;
+            
+            const checkboxes = document.querySelectorAll('#detail-checkboxes input[type="checkbox"]');
+            let checkedCount = 0;
+            checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
+            
+            const newProgress = checkedCount * 10;
+            currentDetailProject.progress = newProgress;
+            
+            if (newProgress > 0 && !currentDetailProject.startDate) {
+                currentDetailProject.startDate = new Date().toISOString().split('T')[0];
+            }
+            
+            if (newProgress === 100) currentDetailProject.status = 'done';
+            else if (newProgress > 0) currentDetailProject.status = 'in-progress';
+            else currentDetailProject.status = 'not-started';
+            
+            updateDetailProgress(newProgress);
+        }
+
+        function renderDetailTasks() {
+            if (!currentDetailProject) return;
+            
+            const tasksContainer = document.getElementById('detail-tasks');
+            tasksContainer.innerHTML = '';
+            
+            currentDetailProject.tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'task-checkbox';
+                checkbox.checked = task.completed;
+                checkbox.addEventListener('change', () => {
+                    // 태스크 완료/취소 시 업데이트 반영
+                    task.completed = !task.completed;
+                    if (task.completed) {
+                        addRecentUpdate(currentDetailProject, '완료', 'task', task.text);
+                    } else {
+                        addRecentUpdate(currentDetailProject, '완료 취소', 'task', task.text);
+                    }
+                    renderDetailTasks();
+                    renderAllViews();
+                    syncTodosWithProjects();
+                    setTimeout(renderRecentUpdates, 0);
+                    autoSave();
+                });
+                
+                const taskText = document.createElement('div');
+                taskText.className = 'task-text';
+                taskText.textContent = task.text;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.style.cssText = 'background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;';
+                deleteBtn.addEventListener('click', () => deleteDetailTask(task.id));
+                
+                taskDiv.appendChild(checkbox);
+                taskDiv.appendChild(taskText);
+                taskDiv.appendChild(deleteBtn);
+                
+                tasksContainer.appendChild(taskDiv);
+            });
+        }
+
+        function toggleDetailTask(taskId) {
+            if (!currentDetailProject) return;
+            
+            const task = currentDetailProject.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                renderDetailTasks();
+            }
+        }
+
+        function deleteDetailTask(taskId) {
+            if (!currentDetailProject) return;
+            
+            currentDetailProject.tasks = currentDetailProject.tasks.filter(t => t.id !== taskId);
+            renderDetailTasks();
+        }
+
+        function addNewTask() {
+            if (!currentDetailProject) return;
+            
+            const input = document.getElementById('new-task-input');
+            const taskText = input.value.trim();
+            
+            if (taskText) {
+                const newTaskId = Math.max(...currentDetailProject.tasks.map(t => t.id), 0) + 1;
+                currentDetailProject.tasks.push({
+                    id: newTaskId,
+                    text: taskText,
+                    completed: false
+                });
+                
+                input.value = '';
+                renderDetailTasks();
+                syncTodosWithProjects();
+                addRecentUpdate(currentDetailProject, '추가', 'task', taskText);
+            }
+        }
+
+        function saveDetailChanges() {
+            if (!currentDetailProject) return;
+            
+            const newTitle = document.getElementById('edit-title')?.value.trim();
+            const newPriority = document.getElementById('edit-priority')?.value;
+            const newStatus = document.getElementById('edit-status')?.value;
+            const newStartDate = document.getElementById('edit-start-date')?.value;
+            const newDueDate = document.getElementById('edit-due-date')?.value;
+            
+            if (!newTitle) {
+                alert('프로젝트 제목을 입력해주세요.');
+                return;
+            }
+            
+            if (!newDueDate) {
+                alert('마감일을 선택해주세요.');
+                return;
+            }
+            
+            if (newStartDate && new Date(newStartDate) > new Date(newDueDate)) {
+                alert('시작일이 마감일보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            currentDetailProject.title = newTitle;
+            currentDetailProject.priority = newPriority;
+            currentDetailProject.status = newStatus;
+            currentDetailProject.startDate = newStartDate;
+            currentDetailProject.dueDate = newDueDate;
+            renderAllViews();
+            autoSave();
+            hideDetailModal(); // <-- 저장 후 자동 닫힘
+            addRecentUpdate(currentDetailProject, '수정', 'project');
+            syncTodosWithProjects();
+        }
+
+        function deleteProjectFromDetail() {
+            if (!currentDetailProject) return;
+            
+            projectToDelete = currentDetailProject;
+            document.getElementById('confirm-message').textContent = `"${currentDetailProject.title}" 프로젝트를 삭제하시겠습니까?`;
+            document.getElementById('confirm-modal').classList.add('show');
+        }
+
+        function deleteProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+            
+            projectToDelete = project;
+            document.getElementById('confirm-message').textContent = `"${project.title}" 프로젝트를 삭제하시겠습니까?`;
+            document.getElementById('confirm-modal').classList.add('show');
+        }
+
+        function confirmDelete() {
+            if (!projectToDelete) return;
+            addRecentUpdate(projectToDelete, '삭제', 'project');
+            projects = projects.filter(p => p.id !== projectToDelete.id);
+            document.getElementById('confirm-modal').classList.remove('show');
+            if (document.getElementById('detail-modal').classList.contains('show')) {
+                hideDetailModal();
+            }
+            projectToDelete = null;
+            
+            renderAllViews();
+            autoSave();
+            showNotification('프로젝트가 삭제되었습니다.');
+            syncTodosWithProjects();
+        }
+
+        function cancelDelete() {
+            document.getElementById('confirm-modal').classList.remove('show');
+            projectToDelete = null;
+        }
+
+        // --- To-Do List Logic (as a page) ---
+        function getAllProjectTodos() {
+            let todos = [];
+            projects.forEach(project => {
+                (project.tasks || []).forEach(task => {
+                    // 태스크가 완료되지 않은 것만 To-Do에 표시
+                    if (!task.completed) {
+                        todos.push({
+                            type: 'project',
+                            projectId: project.id,
+                            projectTitle: project.title,
+                            text: task.text,
+                            completed: !!task.completed,
+                            taskId: task.id
+                        });
+                    }
+                });
+            });
+            return todos;
+        }
+
+        function renderTodos() {
+            const ul = document.getElementById('todo-list');
+            if (!ul) return;
+            ul.innerHTML = '';
+
+            // Project tasks (미완료만)
+            const projectTodos = getAllProjectTodos();
+            let lastProject = null;
+            projectTodos.forEach((todo, idx) => {
+                if (lastProject !== todo.projectTitle) {
+                    const groupLi = document.createElement('li');
+                    groupLi.style = "font-weight:700;color:#1e40af;margin-top:16px;margin-bottom:4px;";
+                    groupLi.textContent = todo.projectTitle;
+                    ul.appendChild(groupLi);
+                    lastProject = todo.projectTitle;
+                }
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.justifyContent = 'space-between';
+                li.style.marginBottom = '4px';
+                li.innerHTML = `
+                    <label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" ${todo.completed ? 'checked' : ''} onchange="completeProjectTodo(${todo.projectId},${todo.taskId})">
+                        <span style="flex:1;${todo.completed ? 'text-decoration:line-through;color:#94a3b8;' : ''}">${todo.text}</span>
+                    </label>
+                `;
+                ul.appendChild(li);
+            });
+
+            // Miscellaneous tasks
+            const miscTodos = loadMiscTodos();
+            if (miscTodos.length > 0) {
+                const groupLi = document.createElement('li');
+                groupLi.style = "font-weight:700;color:#64748b;margin-top:16px;margin-bottom:4px;";
+                groupLi.textContent = "Miscellaneous";
+                ul.appendChild(groupLi);
+                miscTodos.forEach((todo, idx) => {
+                    const li = document.createElement('li');
+                    li.style.display = 'flex';
+                    li.style.alignItems = 'center';
+                    li.style.justifyContent = 'space-between';
+                    li.style.marginBottom = '4px';
+                    li.innerHTML = `
+                        <label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            <input type="checkbox" onchange="removeTodo(${idx})">
+                            <span style="flex:1;">${todo}</span>
+                        </label>
+                        <button onclick="removeTodo(${idx})" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;">x</button>
+                    `;
+                    ul.appendChild(li);
+                });
+            }
+        }
+
+        // --- Updates logic ---
+        let recentUpdates = [];
+        function addRecentUpdate(item, action, type = "project", taskText = "", extra) {
+            const now = new Date();
+            let msg = "";
+            if (type === "project") {
+                msg = `프로젝트 '${item.title}'를 ${action}하였습니다.`;
+            } else if (type === "task") {
+                // 프로젝트명/태스크명으로 표시
+                msg = `태스크 '${item.title} / ${taskText}'를 ${action}하였습니다.`;
+            }
+            // 태스크 완료 취소 시 업데이트에서 해당 항목 제거
+            if (type === "task" && action === "완료 취소" && taskText) {
+                // 최근 업데이트에서 해당 태스크 완료 메시지 제거
+                recentUpdates = recentUpdates.filter(
+                    u => !(u.message.includes(`태스크 '${item.title} / ${taskText}'를 완료하였습니다.`))
+                );
+            } else {
+                recentUpdates.unshift({
+                    message: msg,
+                    date: now.toLocaleString()
+                });
+                if (recentUpdates.length > 5) recentUpdates = recentUpdates.slice(0, 5);
+            }
+            setTimeout(renderRecentUpdates, 0);
+        }
+        function renderRecentUpdates() {
+            const ul = document.getElementById('recent-updates-list');
+            if (!ul) return;
+            ul.innerHTML = '';
+            if (recentUpdates.length === 0) {
+                ul.innerHTML = '<li style="color:#64748b;">최근 변경 내역이 없습니다.</li>';
+                return;
+            }
+            recentUpdates.forEach(update => {
+                ul.innerHTML += `<li style="margin-bottom:6px;">
+                    <span style="font-size:13px;color:#1e293b;">${update.message}</span>
+                    <span style="font-size:11px;color:#64748b;">(${update.date})</span>
+                </li>`;
+            });
+        }
+
+        // 체크박스 클릭 시 프로젝트 태스크 완료 처리 및 To-Do에서 제거
+        function completeProjectTodo(projectId, taskId) {
+            const project = projects.find(p => p.id === projectId);
+            if (project && project.tasks) {
+                const task = project.tasks.find(t => t.id === taskId);
+                if (task) {
+                    if (!task.completed) {
+                        task.completed = true;
+                        addRecentUpdate(project, '완료', 'task', task.text);
+                    } else {
+                        task.completed = false;
+                        addRecentUpdate(project, '완료 취소', 'task', task.text);
+                    }
+                    renderAllViews();
+                    syncTodosWithProjects();
+                    setTimeout(renderRecentUpdates, 0);
+                    autoSave();
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                initFirebase();
+            } catch (e) {
+                updateFirebaseStatus('offline');
+                renderAllViews();
+            }
+            renderRecentUpdates();
+            // renderAllViews(); // renderAllViews는 loadFromFirebase 또는 offline fallback에서 호출됨
+        });
+
+        // --- View switching logic: add todo-view support ---
+        function showView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewName + '-view').classList.add('active');
+            if (viewName === 'track') renderTrack();
+            else if (viewName === 'timeline') renderTimeline();
+            else if (viewName === 'table') renderTable();
+            else if (viewName === 'edit') renderEdit();
+            else if (viewName === 'todo') renderTodos();
+        }
+    </script>
+</body>
+</html>
