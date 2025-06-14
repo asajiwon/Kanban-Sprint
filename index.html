@@ -829,7 +829,7 @@
             <div class="nav-text">스프린트 트랙</div>
         </div>
         <div class="nav-item" onclick="showView('todo')">
-            <div class="nav-icon">📝</div>
+            <div class="nav-icon">📋</div>
             <div class="nav-text">To-Do List</div>
         </div>
         <div class="nav-item" onclick="showView('timeline')">
@@ -837,11 +837,11 @@
             <div class="nav-text">타임라인</div>
         </div>
         <div class="nav-item" onclick="showView('table')">
-            <div class="nav-icon">📊</div>
+            <div class="nav-icon">📑</div>
             <div class="nav-text">전체 프로젝트</div>
         </div>
         <div class="nav-item" onclick="showView('edit')">
-            <div class="nav-icon">⚡</div>
+            <div class="nav-icon">✏️</div>
             <div class="nav-text">편집</div>
         </div>
     </div>
@@ -850,7 +850,7 @@
     <div class="main-content">
         <!-- 스프린트 트랙 뷰 -->
         <div id="track-view" class="view active">
-            <!-- Updates Section (이동) -->
+            <!-- Updates Section -->
             <div id="recent-updates" style="background:rgba(255,255,255,0.95);border-radius:16px;padding:18px 24px;margin-bottom:24px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
                 <div style="font-weight:700;color:#1e40af;margin-bottom:8px;">Updates</div>
                 <ul id="recent-updates-list" style="list-style:none;padding-left:0;margin:0;"></ul>
@@ -859,10 +859,12 @@
                 <div class="track-header">
                     <div class="track-title">🏁 Sprint Track</div>
                 </div>
+
                 <div class="race-track">
                     <div class="track-lines"></div>
                     <div id="runners-container"></div>
                 </div>
+
                 <div class="finish-line">🏆 FINISH LINE 🏆</div>
             </div>
         </div>
@@ -871,7 +873,7 @@
         <div id="todo-view" class="view">
             <div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:32px 24px;max-width:600px;margin:0 auto 32px auto;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
                 <div style="font-weight:700;color:#1e40af;font-size:1.3rem;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:1.5rem;">📝</span> To-Do List
+                    <span style="font-size:1.5rem;">📋</span> To-Do List
                 </div>
                 <div style="margin-bottom:18px;display:flex;gap:8px;">
                     <input id="todo-input" type="text" placeholder="할 일 추가..." style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;font-size:15px;">
@@ -1284,10 +1286,7 @@
         // Firebase 초기화
         function initFirebase() {
             try {
-                // Firebase v9 compat에서는 firebase.apps가 항상 있음
-                if (window.firebase && firebase.apps && firebase.apps.length === 0) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 isFirebaseReady = true;
                 console.log('✅ Firebase 초기화 성공');
@@ -1306,9 +1305,11 @@
         function updateFirebaseStatus(status) {
             const statusEl = document.getElementById('firebase-status');
             if (!statusEl) return;
+            
             statusEl.className = 'firebase-status ' + status;
             const statusText = statusEl.querySelector('.status-text');
             const statusIcon = statusEl.querySelector('.status-icon');
+            
             switch(status) {
                 case 'connected':
                     statusIcon.textContent = '✅';
@@ -1401,13 +1402,6 @@
             }
         }
 
-        // 안전하게 renderAllViews 호출 (존재하지 않을 경우 무시)
-        function safeRenderAllViews() {
-            if (typeof renderAllViews === "function") {
-                renderAllViews();
-            }
-        }
-
         // 자동 저장
         function autoSave() {
             if (!isFirebaseReady) {
@@ -1421,25 +1415,149 @@
             }, 2000);
         }
 
-        // 기본 함수들
+        // 프로젝트 Task와 To-Do 동기화
+function syncTodosWithProjects() {
+    renderTodos();
+    autoSave();
+}
+
+// 최근 업데이트 로직
+let recentUpdates = [];
+function addRecentUpdate(item, action, type = "project", taskText = "", extra) {
+    const now = new Date();
+    let msg = "";
+    
+    if (type === "project") {
+        msg = `${item.title}이(가) ${action}되었습니다`;
+    } else if (type === "task") {
+        msg = `${item.title} // ${taskText}이(가) ${action}되었습니다`;
+    }
+
+    // 태스크 완료 취소나 삭제 시 관련 업데이트 제거
+    if (action === "삭제" || action === "완료 취소") {
+        recentUpdates = recentUpdates.filter(update => {
+            if (type === "project") {
+                return !update.message.includes(item.title);
+            }
+            if (type === "task") {
+                return !update.message.includes(`${item.title} // ${taskText}`);
+            }
+            return true;
+        });
+    } else {
+        recentUpdates.unshift({
+            message: msg,
+            timestamp: now.getTime(),
+            date: now.toLocaleString(),
+            type: type,
+            projectTitle: item.title,
+            taskText: taskText
+        });
+    }
+    if (recentUpdates.length > 5) {
+        recentUpdates = recentUpdates.slice(0, 5);
+    }
+    renderRecentUpdates();
+}
+
+function renderRecentUpdates() {
+    const ul = document.getElementById('recent-updates-list');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (recentUpdates.length === 0) {
+        ul.innerHTML = '<li style="color:#64748b;">최근 변경 내역이 없습니다.</li>';
+        return;
+    }
+    recentUpdates.forEach((update, index) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;';
+        const messageSpan = document.createElement('span');
+        messageSpan.style.cssText = 'font-size:13px;color:#1e293b;';
+        messageSpan.textContent = update.message;
+        const timeSpan = document.createElement('span');
+        timeSpan.style.cssText = 'font-size:11px;color:#64748b;margin-left:8px;';
+        timeSpan.textContent = `(${update.date})`;
+        li.appendChild(messageSpan);
+        li.appendChild(timeSpan);
+        ul.appendChild(li);
+    });
+}
+
+// --- View switching logic and task completion ---
+function showView(viewName, event) {
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    if (event && event.target) {
+        const navItem = event.target.closest('.nav-item');
+        if (navItem) navItem.classList.add('active');
+    }
+
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    document.getElementById(viewName + '-view').classList.add('active');
+
+    if (viewName === 'track') renderTrack();
+    else if (viewName === 'timeline') renderTimeline();
+    else if (viewName === 'table') renderTable();
+    else if (viewName === 'edit') renderEdit();
+    else if (viewName === 'todo') renderTodos();
+}
+
+// Handle task completion
+function completeProjectTodo(projectId, taskId) {
+    const project = projects.find(p => p.id === projectId);
+    if (project && project.tasks) {
+        const task = project.tasks.find(t => t.id === taskId);
+        if (task) {
+            const wasCompleted = task.completed;
+            task.completed = !task.completed;
+            // Update project progress
+            const completedTasks = project.tasks.filter(t => t.completed).length;
+            project.progress = Math.round((completedTasks / project.tasks.length) * 100);
+            // Update project status
+            const prevStatus = project.status;
+            if (project.progress === 100) project.status = 'done';
+            else if (project.progress > 0) project.status = 'in-progress';
+            else project.status = 'not-started';
+            // 최근 업데이트 추가/삭제
+            if (wasCompleted && !task.completed) {
+                // If unchecked, remove the 완료 update for this task
+                recentUpdates = recentUpdates.filter(update => {
+                    return !(update.type === 'task' && update.projectTitle === project.title && update.taskText === task.text && update.message.includes('완료'));
+                });
+                renderRecentUpdates();
+            } else {
+                addRecentUpdate(project, task.completed ? '완료' : '완료 취소', 'task', task.text);
+            }
+            // If project was previously done and is now not done, remove the 완료 update
+            if (prevStatus === 'done' && project.status !== 'done') {
+                recentUpdates = recentUpdates.filter(update => {
+                    return !(update.type === 'project' && update.projectTitle === project.title && update.message.includes('완료'));
+                });
+                renderRecentUpdates();
+            }
+            renderAllViews();
+            autoSave();
+        }
+    }
+}
+
+// 기본 함수들
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('expanded');
         }
 
-        function showView(viewName) {
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.nav-item').classList.add('active');
-
-            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-            document.getElementById(viewName + '-view').classList.add('active');
-            
-            if (viewName === 'track') renderTrack();
-            else if (viewName === 'timeline') renderTimeline();
-            else if (viewName === 'table') renderTable();
-            else if (viewName === 'edit') renderEdit();
-            else if (viewName === 'todo') renderTodos();
-        }
+        // --- View switching logic: add todo-view support ---
+function showView(viewName) {
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    event.target.closest('.nav-item').classList.add('active');
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    document.getElementById(viewName + '-view').classList.add('active');
+    if (viewName === 'track') renderTrack();
+    else if (viewName === 'timeline') renderTimeline();
+    else if (viewName === 'table') renderTable();
+    else if (viewName === 'edit') renderEdit();
+    else if (viewName === 'todo') renderTodos();
+}
 
         function getStatusText(status) {
             const map = { 'not-started': '대기', 'in-progress': '진행중', 'done': '완료' };
@@ -1492,14 +1610,6 @@
         }
 
         // 렌더링 함수들
-        function renderAllViews() {
-            renderTrack();
-            renderTimeline();
-            renderTable();
-            renderEdit();
-            renderTodos(); // To-Do도 항상 동기화
-        }
-
         function renderTrack() {
             const container = document.getElementById('runners-container');
             container.innerHTML = '';
@@ -1538,6 +1648,51 @@
 
             if (activeProjects.length === 0) {
                 container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">진행 중인 프로젝트가 없습니다!</div>';
+            }
+        }
+
+        function renderTodo() {
+            const listContainer = document.getElementById('todo-list');
+            listContainer.innerHTML = '';
+
+            const todos = projects.filter(p => p.status === 'not-started' || p.status === 'in-progress');
+
+            todos.forEach(todo => {
+                const listItem = document.createElement('li');
+                listItem.style.cssText = 'padding: 10px 0; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;';
+
+                const title = document.createElement('div');
+                title.textContent = todo.title;
+                title.style.cssText = 'font-size: 16px; color: #1e293b; font-weight: 600;';
+
+                const actions = document.createElement('div');
+                actions.style.cssText = 'display: flex; gap: 10px;';
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = '✏️';
+                editBtn.style.cssText = 'background: #3b82f6; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 14px;';
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showDetailModal(todo.id);
+                };
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.style.cssText = 'background: #dc2626; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 14px;';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteProject(todo.id);
+                };
+
+                actions.appendChild(editBtn);
+                actions.appendChild(deleteBtn);
+                listItem.appendChild(title);
+                listItem.appendChild(actions);
+                listContainer.appendChild(listItem);
+            });
+
+            if (todos.length === 0) {
+                listContainer.innerHTML = '<div style="text-align: center; color: #64748b; padding: 20px;">할 일이 없습니다!</div>';
             }
         }
 
@@ -1896,14 +2051,14 @@
 
         function addInitialTask() {
             const container = document.getElementById('initial-tasks');
-            const taskItem = document.createElement('div class="task-item";
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
             taskItem.innerHTML = '<input type="text" class="add-task-input" placeholder="새로운 태스크" style="margin-top: 8px;">';
             container.appendChild(taskItem);
         }
 
         function submitNewProject() {
             const title = document.getElementById('add-project-title').value.trim();
-
             const startDate = document.getElementById('add-project-start').value;
             const dueDate = document.getElementById('add-project-due').value;
             const priority = document.getElementById('add-project-priority').value;
@@ -1964,8 +2119,6 @@
             autoSave();
             hideAddModal();
             showNotification(`"${title}" 프로젝트가 추가되었습니다!`);
-            addRecentUpdate(newProject, '추가', 'project');
-            syncTodosWithProjects();
         }
 
         function showDetailModal(projectId) {
@@ -2100,20 +2253,7 @@
                 checkbox.type = 'checkbox';
                 checkbox.className = 'task-checkbox';
                 checkbox.checked = task.completed;
-                checkbox.addEventListener('change', () => {
-                    // 태스크 완료/취소 시 업데이트 반영
-                    task.completed = !task.completed;
-                    if (task.completed) {
-                        addRecentUpdate(currentDetailProject, '완료', 'task', task.text);
-                    } else {
-                        addRecentUpdate(currentDetailProject, '완료 취소', 'task', task.text);
-                    }
-                    renderDetailTasks();
-                    renderAllViews();
-                    syncTodosWithProjects();
-                    setTimeout(renderRecentUpdates, 0);
-                    autoSave();
-                });
+                checkbox.addEventListener('change', () => toggleDetailTask(task.id));
                 
                 const taskText = document.createElement('div');
                 taskText.className = 'task-text';
@@ -2165,35 +2305,39 @@
                 
                 input.value = '';
                 renderDetailTasks();
-                syncTodosWithProjects();
-                addRecentUpdate(currentDetailProject, '추가', 'task', taskText);
             }
         }
 
         function saveDetailChanges() {
             if (!currentDetailProject) return;
-            
             const newTitle = document.getElementById('edit-title')?.value.trim();
             const newPriority = document.getElementById('edit-priority')?.value;
             const newStatus = document.getElementById('edit-status')?.value;
             const newStartDate = document.getElementById('edit-start-date')?.value;
             const newDueDate = document.getElementById('edit-due-date')?.value;
-            
             if (!newTitle) {
                 alert('프로젝트 제목을 입력해주세요.');
                 return;
             }
-            
             if (!newDueDate) {
                 alert('마감일을 선택해주세요.');
                 return;
             }
-            
             if (newStartDate && new Date(newStartDate) > new Date(newDueDate)) {
                 alert('시작일이 마감일보다 늦을 수 없습니다.');
                 return;
             }
-            
+            // If project was previously done and is now not done, remove the 완료 update
+            if (currentDetailProject.status === 'done' && newStatus !== 'done') {
+                recentUpdates = recentUpdates.filter(update => {
+                    return !(update.type === 'project' && update.projectTitle === currentDetailProject.title && update.message.includes('완료'));
+                });
+                renderRecentUpdates();
+            }
+            // If project is now done and was not done before, add a 완료 update
+            if (currentDetailProject.status !== 'done' && newStatus === 'done') {
+                addRecentUpdate(currentDetailProject, '완료', 'project');
+            }
             currentDetailProject.title = newTitle;
             currentDetailProject.priority = newPriority;
             currentDetailProject.status = newStatus;
@@ -2201,9 +2345,8 @@
             currentDetailProject.dueDate = newDueDate;
             renderAllViews();
             autoSave();
-            hideDetailModal(); // <-- 저장 후 자동 닫힘
-            addRecentUpdate(currentDetailProject, '수정', 'project');
-            syncTodosWithProjects();
+            showNotification('프로젝트 정보가 저장되었습니다!');
+            hideDetailModal();
         }
 
         function deleteProjectFromDetail() {
@@ -2225,8 +2368,9 @@
 
         function confirmDelete() {
             if (!projectToDelete) return;
-            addRecentUpdate(projectToDelete, '삭제', 'project');
+            
             projects = projects.filter(p => p.id !== projectToDelete.id);
+            
             document.getElementById('confirm-modal').classList.remove('show');
             if (document.getElementById('detail-modal').classList.contains('show')) {
                 hideDetailModal();
@@ -2236,7 +2380,6 @@
             renderAllViews();
             autoSave();
             showNotification('프로젝트가 삭제되었습니다.');
-            syncTodosWithProjects();
         }
 
         function cancelDelete() {
@@ -2244,167 +2387,217 @@
             projectToDelete = null;
         }
 
-        // --- To-Do List Logic (as a page) ---
-        function getAllProjectTodos() {
-            let todos = [];
-            projects.forEach(project => {
-                (project.tasks || []).forEach(task => {
-                    // 태스크가 완료되지 않은 것만 To-Do에 표시
-                    if (!task.completed) {
-                        todos.push({
-                            type: 'project',
-                            projectId: project.id,
-                            projectTitle: project.title,
-                            text: task.text,
-                            completed: !!task.completed,
-                            taskId: task.id
-                        });
-                    }
-                });
-            });
-            return todos;
+        function renderAllViews() {
+            renderTrack();
+            renderTodo();
+            renderTimeline();
+            renderTable();
+            renderEdit();
         }
 
-        function renderTodos() {
-            const ul = document.getElementById('todo-list');
-            if (!ul) return;
-            ul.innerHTML = '';
-
-            // Project tasks (미완료만)
-            const projectTodos = getAllProjectTodos();
-            let lastProject = null;
-            projectTodos.forEach((todo, idx) => {
-                if (lastProject !== todo.projectTitle) {
-                    const groupLi = document.createElement('li');
-                    groupLi.style = "font-weight:700;color:#1e40af;margin-top:16px;margin-bottom:4px;";
-                    groupLi.textContent = todo.projectTitle;
-                    ul.appendChild(groupLi);
-                    lastProject = todo.projectTitle;
-                }
-                const li = document.createElement('li');
-                li.style.display = 'flex';
-                li.style.alignItems = 'center';
-                li.style.justifyContent = 'space-between';
-                li.style.marginBottom = '4px';
-                li.innerHTML = `
-                    <label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;">
-                        <input type="checkbox" ${todo.completed ? 'checked' : ''} onchange="completeProjectTodo(${todo.projectId},${todo.taskId})">
-                        <span style="flex:1;${todo.completed ? 'text-decoration:line-through;color:#94a3b8;' : ''}">${todo.text}</span>
-                    </label>
-                `;
-                ul.appendChild(li);
-            });
-
-            // Miscellaneous tasks
-            const miscTodos = loadMiscTodos();
-            if (miscTodos.length > 0) {
-                const groupLi = document.createElement('li');
-                groupLi.style = "font-weight:700;color:#64748b;margin-top:16px;margin-bottom:4px;";
-                groupLi.textContent = "Miscellaneous";
-                ul.appendChild(groupLi);
-                miscTodos.forEach((todo, idx) => {
-                    const li = document.createElement('li');
-                    li.style.display = 'flex';
-                    li.style.alignItems = 'center';
-                    li.style.justifyContent = 'space-between';
-                    li.style.marginBottom = '4px';
-                    li.innerHTML = `
-                        <label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;">
-                            <input type="checkbox" onchange="removeTodo(${idx})">
-                            <span style="flex:1;">${todo}</span>
-                        </label>
-                        <button onclick="removeTodo(${idx})" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;">x</button>
-                    `;
-                    ul.appendChild(li);
-                });
-            }
-        }
-
-        // --- Updates logic ---
-        let recentUpdates = [];
-        function addRecentUpdate(item, action, type = "project", taskText = "", extra) {
-            const now = new Date();
-            let msg = "";
-            if (type === "project") {
-                msg = `프로젝트 '${item.title}'를 ${action}하였습니다.`;
-            } else if (type === "task") {
-                // 프로젝트명/태스크명으로 표시
-                msg = `태스크 '${item.title} / ${taskText}'를 ${action}하였습니다.`;
-            }
-            // 태스크 완료 취소 시 업데이트에서 해당 항목 제거
-            if (type === "task" && action === "완료 취소" && taskText) {
-                // 최근 업데이트에서 해당 태스크 완료 메시지 제거
-                recentUpdates = recentUpdates.filter(
-                    u => !(u.message.includes(`태스크 '${item.title} / ${taskText}'를 완료하였습니다.`))
-                );
-            } else {
-                recentUpdates.unshift({
-                    message: msg,
-                    date: now.toLocaleString()
-                });
-                if (recentUpdates.length > 5) recentUpdates = recentUpdates.slice(0, 5);
-            }
-            setTimeout(renderRecentUpdates, 0);
-        }
-        function renderRecentUpdates() {
-            const ul = document.getElementById('recent-updates-list');
-            if (!ul) return;
-            ul.innerHTML = '';
-            if (recentUpdates.length === 0) {
-                ul.innerHTML = '<li style="color:#64748b;">최근 변경 내역이 없습니다.</li>';
-                return;
-            }
-            recentUpdates.forEach(update => {
-                ul.innerHTML += `<li style="margin-bottom:6px;">
-                    <span style="font-size:13px;color:#1e293b;">${update.message}</span>
-                    <span style="font-size:11px;color:#64748b;">(${update.date})</span>
-                </li>`;
-            });
-        }
-
-        // 체크박스 클릭 시 프로젝트 태스크 완료 처리 및 To-Do에서 제거
-        function completeProjectTodo(projectId, taskId) {
-            const project = projects.find(p => p.id === projectId);
-            if (project && project.tasks) {
-                const task = project.tasks.find(t => t.id === taskId);
-                if (task) {
-                    if (!task.completed) {
-                        task.completed = true;
-                        addRecentUpdate(project, '완료', 'task', task.text);
-                    } else {
-                        task.completed = false;
-                        addRecentUpdate(project, '완료 취소', 'task', task.text);
-                    }
-                    renderAllViews();
-                    syncTodosWithProjects();
-                    setTimeout(renderRecentUpdates, 0);
-                    autoSave();
-                }
-            }
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                initFirebase();
-            } catch (e) {
-                updateFirebaseStatus('offline');
+        function clearAll() {
+            if (confirm('모든 프로젝트를 삭제하시겠습니까?')) {
+                projects = [];
+                nextId = 1;
                 renderAllViews();
+                autoSave();
+                showNotification('모든 프로젝트가 삭제되었습니다.');
             }
-            renderRecentUpdates();
-            // renderAllViews(); // renderAllViews는 loadFromFirebase 또는 offline fallback에서 호출됨
-        });
-
-        // --- View switching logic: add todo-view support ---
-        function showView(viewName) {
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.nav-item').classList.add('active');
-            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-            document.getElementById(viewName + '-view').classList.add('active');
-            if (viewName === 'track') renderTrack();
-            else if (viewName === 'timeline') renderTimeline();
-            else if (viewName === 'table') renderTable();
-            else if (viewName === 'edit') renderEdit();
-            else if (viewName === 'todo') renderTodos();
         }
+
+        function exportData() {
+            const dataStr = JSON.stringify(projects, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kanban-sprint-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('데이터가 내보내졌습니다!');
+        }
+
+        function importData() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedProjects = JSON.parse(e.target.result);
+                    if (Array.isArray(importedProjects)) {
+                        projects = importedProjects;
+                        nextId = Math.max(...projects.map(p => p.id || 0), 0) + 1;
+                        renderAllViews();
+                        autoSave();
+                        showNotification(`${importedProjects.length}개 프로젝트를 가져왔습니다!`);
+                    } else {
+                        alert('올바른 프로젝트 데이터 형식이 아닙니다.');
+                    }
+                } catch (error) {
+                    alert('파일을 읽는 중 오류가 발생했습니다.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // To-Do 관련 함수들
+function getAllProjectTodos() {
+    let todos = [];
+    projects.forEach(project => {
+        (project.tasks || []).forEach(task => {
+            // 태스크가 완료되지 않은 것만 To-Do에 표시
+            if (!task.completed) {
+                todos.push({
+                    type: 'project',
+                    projectId: project.id,
+                    projectTitle: project.title,
+                    text: task.text,
+                    completed: !!task.completed,
+                    taskId: task.id
+                });
+            }
+        });
+    });
+    return todos;
+}
+
+// 잡다한 To-Do 저장/로드
+function loadMiscTodos() {
+    const saved = localStorage.getItem('misc-todos');
+    return saved ? JSON.parse(saved) : [];
+}
+
+function saveMiscTodos(todos) {
+    localStorage.setItem('misc-todos', JSON.stringify(todos));
+}
+
+// To-Do 추가 (잡다한 할 일)
+function addTodo() {
+    const input = document.getElementById('todo-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const todos = loadMiscTodos();
+    todos.push(text);
+    saveMiscTodos(todos);
+    input.value = '';
+    renderTodos();
+}
+
+// To-Do 삭제 (잡다한 할 일)
+function removeTodo(index) {
+    const todos = loadMiscTodos();
+    todos.splice(index, 1);
+    saveMiscTodos(todos);
+    renderTodos();
+}
+
+// To-Do 뷰 렌더링
+function renderTodos() {
+    const ul = document.getElementById('todo-list');
+    if (!ul) return;
+    ul.innerHTML = '';
+    // Project tasks (미완료만)
+    const projectTodos = getAllProjectTodos();
+    projectTodos.forEach((todo) => {
+        const li = document.createElement('li');
+        li.style = "display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #e2e8f0;";
+        li.innerHTML = `
+            <label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" ${todo.completed ? 'checked' : ''} 
+                    style="width:16px;height:16px;" 
+                    onchange="completeProjectTodo(${todo.projectId},${todo.taskId})">
+                <span style="flex:1;${todo.completed ? 'text-decoration:line-through;color:#94a3b8;' : ''}">
+                    <span style="font-weight:700;">${todo.projectTitle}</span> // ${todo.text}
+                </span>
+            </label>
+        `;
+        ul.appendChild(li);
+    });
+    // Miscellaneous tasks
+    const miscTodos = loadMiscTodos();
+    miscTodos.forEach((todo, idx) => {
+        const li = document.createElement('li');
+        li.style = "display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #e2e8f0;";
+        li.innerHTML = `
+            <label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" style="width:16px;height:16px;" onchange="removeTodo(${idx})">
+                <span style="flex:1;">
+                    <span style="color:#64748b;font-weight:600;">Miscellaneous</span> // ${todo}
+                </span>
+            </label>
+            <button onclick="removeTodo(${idx})" 
+                style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;">
+                x
+            </button>
+        `;
+        ul.appendChild(li);
+    });
+    if (projectTodos.length === 0 && miscTodos.length === 0) {
+        ul.innerHTML = '<li style="text-align:center;color:#64748b;padding:20px;">할 일이 없습니다!</li>';
+    }
+}
+
+// 체크박스 클릭 시 프로젝트 태스크 완료 처리 및 To-Do에서 제거
+function completeProjectTodo(projectId, taskId) {
+    const project = projects.find(p => p.id === projectId);
+    if (project && project.tasks) {
+        const task = project.tasks.find(t => t.id === taskId);
+        if (task) {
+            const wasCompleted = task.completed;
+            task.completed = !task.completed;
+            // Update project progress
+            const completedTasks = project.tasks.filter(t => t.completed).length;
+            project.progress = Math.round((completedTasks / project.tasks.length) * 100);
+            // Update project status
+            const prevStatus = project.status;
+            if (project.progress === 100) project.status = 'done';
+            else if (project.progress > 0) project.status = 'in-progress';
+            else project.status = 'not-started';
+            // 최근 업데이트 추가/삭제
+            if (wasCompleted && !task.completed) {
+                // If unchecked, remove the 완료 update for this task
+                recentUpdates = recentUpdates.filter(update => {
+                    return !(update.type === 'task' && update.projectTitle === project.title && update.taskText === task.text && update.message.includes('완료'));
+                });
+                renderRecentUpdates();
+            } else {
+                addRecentUpdate(project, task.completed ? '완료' : '완료 취소', 'task', task.text);
+            }
+            // If project was previously done and is now not done, remove the 완료 update
+            if (prevStatus === 'done' && project.status !== 'done') {
+                recentUpdates = recentUpdates.filter(update => {
+                    return !(update.type === 'project' && update.projectTitle === project.title && update.message.includes('완료'));
+                });
+                renderRecentUpdates();
+            }
+            renderAllViews();
+            autoSave();
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        initFirebase();
+    } catch (e) {
+        updateFirebaseStatus('offline');
+        renderAllViews();
+    }
+    renderRecentUpdates();
+    // renderAllViews는 loadFromFirebase 또는 offline fallback에서 호출됨
+});
     </script>
 </body>
 </html>
