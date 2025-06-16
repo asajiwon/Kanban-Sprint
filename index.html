@@ -1426,34 +1426,33 @@ let recentUpdates = [];
 function addRecentUpdate(item, action, type = "project", taskText = "", extra) {
     const now = new Date();
     let msg = "";
-    
     if (type === "project") {
-        msg = `${item.title}이(가) ${action}되었습니다`;
+        if (action === '완료') {
+            msg = `${item.title}이(가) 완료되었습니다`;
+        } else if (action === '추가') {
+            msg = `${item.title}이(가) 추가되었습니다`;
+        } else if (action === '진행중') {
+            msg = `${item.title}이(가) 진행중으로 변경되었습니다`;
+        } else if (action === '대기') {
+            msg = `${item.title}이(가) 대기로 변경되었습니다`;
+        } else {
+            return;
+        }
     } else if (type === "task") {
-        msg = `${item.title} // ${taskText}이(가) ${action}되었습니다`;
+        if (action === '완료') {
+            msg = `${item.title} // ${taskText}이(가) 완료되었습니다`;
+        } else {
+            return;
+        }
     }
-
-    // 태스크 완료 취소나 삭제 시 관련 업데이트 제거
-    if (action === "삭제" || action === "완료 취소") {
-        recentUpdates = recentUpdates.filter(update => {
-            if (type === "project") {
-                return !update.message.includes(item.title);
-            }
-            if (type === "task") {
-                return !update.message.includes(`${item.title} // ${taskText}`);
-            }
-            return true;
-        });
-    } else {
-        recentUpdates.unshift({
-            message: msg,
-            timestamp: now.getTime(),
-            date: now.toLocaleString(),
-            type: type,
-            projectTitle: item.title,
-            taskText: taskText
-        });
-    }
+    recentUpdates.unshift({
+        message: msg,
+        timestamp: now.getTime(),
+        date: now.toLocaleString(),
+        type: type,
+        projectTitle: item.title,
+        taskText: taskText
+    });
     if (recentUpdates.length > 5) {
         recentUpdates = recentUpdates.slice(0, 5);
     }
@@ -1524,8 +1523,8 @@ function completeProjectTodo(projectId, taskId) {
                     return !(update.type === 'task' && update.projectTitle === project.title && update.taskText === task.text && update.message.includes('완료'));
                 });
                 renderRecentUpdates();
-            } else {
-                addRecentUpdate(project, task.completed ? '완료' : '완료 취소', 'task', task.text);
+            } else if (task.completed) {
+                addRecentUpdate(project, '완료', 'task', task.text);
             }
             // If project was previously done and is now not done, remove the 완료 update
             if (prevStatus === 'done' && project.status !== 'done') {
@@ -1533,8 +1532,12 @@ function completeProjectTodo(projectId, taskId) {
                     return !(update.type === 'project' && update.projectTitle === project.title && update.message.includes('완료'));
                 });
                 renderRecentUpdates();
+            } else if (project.status === 'done' && prevStatus !== 'done') {
+                addRecentUpdate(project, '완료', 'project');
             }
-            renderAllViews();
+            // 변경: 전체 뷰를 렌더링하지 않고, To-Do와 업데이트만 렌더링
+            renderTodos();
+            renderRecentUpdates();
             autoSave();
         }
     }
@@ -2115,6 +2118,7 @@ function showView(viewName) {
             };
             
             projects.push(newProject);
+            addRecentUpdate(newProject, '추가', 'project');
             renderAllViews();
             autoSave();
             hideAddModal();
@@ -2184,27 +2188,10 @@ function showView(viewName) {
                     addNewTask();
                 }
             };
-            
+            // 버튼 영역 숨김 ("저장"/"삭제" 제거)
             const buttonArea = document.querySelector('#detail-modal .detail-content > div:last-child');
             buttonArea.innerHTML = '';
-            buttonArea.style.display = 'flex';
-            buttonArea.style.gap = '10px';
-            buttonArea.style.marginTop = '25px';
-            
-            const saveBtn = document.createElement('button');
-            saveBtn.className = 'btn';
-            saveBtn.style.flex = '1';
-            saveBtn.textContent = '💾 저장';
-            saveBtn.addEventListener('click', () => saveDetailChanges());
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn btn-cancel';
-            deleteBtn.style.flex = '1';
-            deleteBtn.textContent = '🗑️ 삭제';
-            deleteBtn.addEventListener('click', () => deleteProjectFromDetail());
-            
-            buttonArea.appendChild(saveBtn);
-            buttonArea.appendChild(deleteBtn);
+            buttonArea.style.display = 'none';
         }
 
         function hideDetailModal() {
@@ -2241,33 +2228,58 @@ function showView(viewName) {
 
         function renderDetailTasks() {
             if (!currentDetailProject) return;
-            
             const tasksContainer = document.getElementById('detail-tasks');
             tasksContainer.innerHTML = '';
-            
             currentDetailProject.tasks.forEach(task => {
                 const taskDiv = document.createElement('div');
                 taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
-                
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.className = 'task-checkbox';
                 checkbox.checked = task.completed;
-                checkbox.addEventListener('change', () => toggleDetailTask(task.id));
-                
+                checkbox.addEventListener('change', () => {
+                    const wasCompleted = task.completed;
+                    task.completed = !task.completed;
+                    // Update project progress
+                    const completedTasks = currentDetailProject.tasks.filter(t => t.completed).length;
+                    currentDetailProject.progress = Math.round((completedTasks / currentDetailProject.tasks.length) * 100);
+                    // Update project status
+                    const prevStatus = currentDetailProject.status;
+                    if (currentDetailProject.progress === 100) currentDetailProject.status = 'done';
+                    else if (currentDetailProject.progress > 0) currentDetailProject.status = 'in-progress';
+                    else currentDetailProject.status = 'not-started';
+                    // 최근 업데이트 추가/삭제 (subtask)
+                    if (wasCompleted && !task.completed) {
+                        recentUpdates = recentUpdates.filter(update => {
+                            return !(update.type === 'task' && update.projectTitle === currentDetailProject.title && update.taskText === task.text && update.message.includes('완료'));
+                        });
+                        renderRecentUpdates();
+                    } else if (task.completed) {
+                        addRecentUpdate(currentDetailProject, '완료', 'task', task.text);
+                    }
+                    if (prevStatus === 'done' && currentDetailProject.status !== 'done') {
+                        recentUpdates = recentUpdates.filter(update => {
+                            return !(update.type === 'project' && update.projectTitle === currentDetailProject.title && update.message.includes('완료'));
+                        });
+                        renderRecentUpdates();
+                    } else if (currentDetailProject.status === 'done' && prevStatus !== 'done') {
+                        addRecentUpdate(currentDetailProject, '완료', 'project');
+                    }
+                    renderDetailTasks();
+                    updateDetailProgress(currentDetailProject.progress);
+                    renderRecentUpdates();
+                    autoSave();
+                });
                 const taskText = document.createElement('div');
                 taskText.className = 'task-text';
                 taskText.textContent = task.text;
-                
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '🗑️';
                 deleteBtn.style.cssText = 'background: #fee2e2; color: #dc2626; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px;';
                 deleteBtn.addEventListener('click', () => deleteDetailTask(task.id));
-                
                 taskDiv.appendChild(checkbox);
                 taskDiv.appendChild(taskText);
                 taskDiv.appendChild(deleteBtn);
-                
                 tasksContainer.appendChild(taskDiv);
             });
         }
@@ -2310,6 +2322,7 @@ function showView(viewName) {
 
         function saveDetailChanges() {
             if (!currentDetailProject) return;
+            const prevStatus = currentDetailProject.status;
             const newTitle = document.getElementById('edit-title')?.value.trim();
             const newPriority = document.getElementById('edit-priority')?.value;
             const newStatus = document.getElementById('edit-status')?.value;
@@ -2327,23 +2340,21 @@ function showView(viewName) {
                 alert('시작일이 마감일보다 늦을 수 없습니다.');
                 return;
             }
-            // If project was previously done and is now not done, remove the 완료 update
-            if (currentDetailProject.status === 'done' && newStatus !== 'done') {
-                recentUpdates = recentUpdates.filter(update => {
-                    return !(update.type === 'project' && update.projectTitle === currentDetailProject.title && update.message.includes('완료'));
-                });
-                renderRecentUpdates();
-            }
-            // If project is now done and was not done before, add a 완료 update
-            if (currentDetailProject.status !== 'done' && newStatus === 'done') {
-                addRecentUpdate(currentDetailProject, '완료', 'project');
-            }
             currentDetailProject.title = newTitle;
             currentDetailProject.priority = newPriority;
             currentDetailProject.status = newStatus;
             currentDetailProject.startDate = newStartDate;
             currentDetailProject.dueDate = newDueDate;
+            // 상태가 변경된 경우 업데이트 추가 (완료/진행중/대기)
+            if (prevStatus !== currentDetailProject.status) {
+                let action = '';
+                if (currentDetailProject.status === 'done') action = '완료';
+                else if (currentDetailProject.status === 'in-progress') action = '진행중';
+                else if (currentDetailProject.status === 'not-started') action = '대기';
+                if (action) addRecentUpdate(currentDetailProject, action, 'project');
+            }
             renderAllViews();
+            renderRecentUpdates();
             autoSave();
             showNotification('프로젝트 정보가 저장되었습니다!');
             hideDetailModal();
@@ -2472,7 +2483,6 @@ function getAllProjectTodos() {
     return todos;
 }
 
-// 잡다한 To-Do 저장/로드
 function loadMiscTodos() {
     const saved = localStorage.getItem('misc-todos');
     return saved ? JSON.parse(saved) : [];
@@ -2572,8 +2582,8 @@ function completeProjectTodo(projectId, taskId) {
                     return !(update.type === 'task' && update.projectTitle === project.title && update.taskText === task.text && update.message.includes('완료'));
                 });
                 renderRecentUpdates();
-            } else {
-                addRecentUpdate(project, task.completed ? '완료' : '완료 취소', 'task', task.text);
+            } else if (task.completed) {
+                addRecentUpdate(project, '완료', 'task', task.text);
             }
             // If project was previously done and is now not done, remove the 완료 update
             if (prevStatus === 'done' && project.status !== 'done') {
@@ -2581,8 +2591,12 @@ function completeProjectTodo(projectId, taskId) {
                     return !(update.type === 'project' && update.projectTitle === project.title && update.message.includes('완료'));
                 });
                 renderRecentUpdates();
+            } else if (project.status === 'done' && prevStatus !== 'done') {
+                addRecentUpdate(project, '완료', 'project');
             }
-            renderAllViews();
+            // 변경: 전체 뷰를 렌더링하지 않고, To-Do와 업데이트만 렌더링
+            renderTodos();
+            renderRecentUpdates();
             autoSave();
         }
     }
@@ -2596,6 +2610,17 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAllViews();
     }
     renderRecentUpdates();
+    // 디테일 모달 바깥 클릭 시 자동 저장 및 닫기
+    document.querySelectorAll('.detail-modal').forEach(modal => {
+        modal.addEventListener('mousedown', function(e) {
+            if (e.target === modal && modal.classList.contains('show')) {
+                if (modal.id === 'detail-modal' && currentDetailProject) {
+                    saveDetailChanges();
+                }
+                modal.classList.remove('show');
+            }
+        });
+    });
     // renderAllViews는 loadFromFirebase 또는 offline fallback에서 호출됨
 });
     </script>
