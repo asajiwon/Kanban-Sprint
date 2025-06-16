@@ -1444,6 +1444,14 @@ function addRecentUpdate(item, action, type = "project", taskText = "", extra) {
         } else {
             return;
         }
+    } else if (type === "todo") {
+        if (action === '추가') {
+            msg = `Miscellaneous // ${taskText}이(가) 추가되었습니다`;
+        } else if (action === '완료') {
+            msg = `Miscellaneous // ${taskText}이(가) 완료되었습니다`;
+        } else {
+            return;
+        }
     }
     recentUpdates.unshift({
         message: msg,
@@ -1508,17 +1516,9 @@ function completeProjectTodo(projectId, taskId) {
         if (task) {
             const wasCompleted = task.completed;
             task.completed = !task.completed;
-            // Update project progress
-            const completedTasks = project.tasks.filter(t => t.completed).length;
-            project.progress = Math.round((completedTasks / project.tasks.length) * 100);
-            // Update project status
-            const prevStatus = project.status;
-            if (project.progress === 100) project.status = 'done';
-            else if (project.progress > 0) project.status = 'in-progress';
-            else project.status = 'not-started';
+            // No automatic progress/status update here
             // 최근 업데이트 추가/삭제
             if (wasCompleted && !task.completed) {
-                // If unchecked, remove the 완료 update for this task
                 recentUpdates = recentUpdates.filter(update => {
                     return !(update.type === 'task' && update.projectTitle === project.title && update.taskText === task.text && update.message.includes('완료'));
                 });
@@ -1526,16 +1526,6 @@ function completeProjectTodo(projectId, taskId) {
             } else if (task.completed) {
                 addRecentUpdate(project, '완료', 'task', task.text);
             }
-            // If project was previously done and is now not done, remove the 완료 update
-            if (prevStatus === 'done' && project.status !== 'done') {
-                recentUpdates = recentUpdates.filter(update => {
-                    return !(update.type === 'project' && update.projectTitle === project.title && update.message.includes('완료'));
-                });
-                renderRecentUpdates();
-            } else if (project.status === 'done' && prevStatus !== 'done') {
-                addRecentUpdate(project, '완료', 'project');
-            }
-            // 변경: 전체 뷰를 렌더링하지 않고, To-Do와 업데이트만 렌더링
             renderTodos();
             renderRecentUpdates();
             autoSave();
@@ -1889,7 +1879,7 @@ function showView(viewName) {
                 container.innerHTML = '';
                 
                 projects.filter(p => p.status === status).forEach(project => {
-                    const card = document.createElement('div');
+                                       const card = document.createElement('div');
                     card.className = 'card';
                     card.style.cursor = 'pointer';
                     
@@ -2240,15 +2230,7 @@ function showView(viewName) {
                 checkbox.addEventListener('change', () => {
                     const wasCompleted = task.completed;
                     task.completed = !task.completed;
-                    // Update project progress
-                    const completedTasks = currentDetailProject.tasks.filter(t => t.completed).length;
-                    currentDetailProject.progress = Math.round((completedTasks / currentDetailProject.tasks.length) * 100);
-                    // Update project status
-                    const prevStatus = currentDetailProject.status;
-                    if (currentDetailProject.progress === 100) currentDetailProject.status = 'done';
-                    else if (currentDetailProject.progress > 0) currentDetailProject.status = 'in-progress';
-                    else currentDetailProject.status = 'not-started';
-                    // 최근 업데이트 추가/삭제 (subtask)
+                    // No automatic progress/status update here
                     if (wasCompleted && !task.completed) {
                         recentUpdates = recentUpdates.filter(update => {
                             return !(update.type === 'task' && update.projectTitle === currentDetailProject.title && update.taskText === task.text && update.message.includes('완료'));
@@ -2257,16 +2239,7 @@ function showView(viewName) {
                     } else if (task.completed) {
                         addRecentUpdate(currentDetailProject, '완료', 'task', task.text);
                     }
-                    if (prevStatus === 'done' && currentDetailProject.status !== 'done') {
-                        recentUpdates = recentUpdates.filter(update => {
-                            return !(update.type === 'project' && update.projectTitle === currentDetailProject.title && update.message.includes('완료'));
-                        });
-                        renderRecentUpdates();
-                    } else if (currentDetailProject.status === 'done' && prevStatus !== 'done') {
-                        addRecentUpdate(currentDetailProject, '완료', 'project');
-                    }
                     renderDetailTasks();
-                    updateDetailProgress(currentDetailProject.progress);
                     renderRecentUpdates();
                     autoSave();
                 });
@@ -2497,19 +2470,23 @@ function addTodo() {
     const input = document.getElementById('todo-input');
     const text = input.value.trim();
     if (!text) return;
-    
     const todos = loadMiscTodos();
     todos.push(text);
     saveMiscTodos(todos);
     input.value = '';
+    // Add to recent updates
+    addRecentUpdate({ title: 'Miscellaneous' }, '추가', 'todo', text);
     renderTodos();
 }
 
 // To-Do 삭제 (잡다한 할 일)
 function removeTodo(index) {
     const todos = loadMiscTodos();
+    const removed = todos[index];
     todos.splice(index, 1);
     saveMiscTodos(todos);
+    // Add to recent updates
+    addRecentUpdate({ title: 'Miscellaneous' }, '완료', 'todo', removed);
     renderTodos();
 }
 
@@ -2557,6 +2534,16 @@ function renderTodos() {
     if (projectTodos.length === 0 && miscTodos.length === 0) {
         ul.innerHTML = '<li style="text-align:center;color:#64748b;padding:20px;">할 일이 없습니다!</li>';
     }
+    // Add Enter key event for To-Do input
+    const todoInput = document.getElementById('todo-input');
+    if (todoInput && !todoInput._enterBound) {
+        todoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+        todoInput._enterBound = true;
+    }
 }
 
 // 체크박스 클릭 시 프로젝트 태스크 완료 처리 및 To-Do에서 제거
@@ -2567,17 +2554,9 @@ function completeProjectTodo(projectId, taskId) {
         if (task) {
             const wasCompleted = task.completed;
             task.completed = !task.completed;
-            // Update project progress
-            const completedTasks = project.tasks.filter(t => t.completed).length;
-            project.progress = Math.round((completedTasks / project.tasks.length) * 100);
-            // Update project status
-            const prevStatus = project.status;
-            if (project.progress === 100) project.status = 'done';
-            else if (project.progress > 0) project.status = 'in-progress';
-            else project.status = 'not-started';
+            // No automatic progress/status update here
             // 최근 업데이트 추가/삭제
             if (wasCompleted && !task.completed) {
-                // If unchecked, remove the 완료 update for this task
                 recentUpdates = recentUpdates.filter(update => {
                     return !(update.type === 'task' && update.projectTitle === project.title && update.taskText === task.text && update.message.includes('완료'));
                 });
@@ -2585,16 +2564,6 @@ function completeProjectTodo(projectId, taskId) {
             } else if (task.completed) {
                 addRecentUpdate(project, '완료', 'task', task.text);
             }
-            // If project was previously done and is now not done, remove the 완료 update
-            if (prevStatus === 'done' && project.status !== 'done') {
-                recentUpdates = recentUpdates.filter(update => {
-                    return !(update.type === 'project' && update.projectTitle === project.title && update.message.includes('완료'));
-                });
-                renderRecentUpdates();
-            } else if (project.status === 'done' && prevStatus !== 'done') {
-                addRecentUpdate(project, '완료', 'project');
-            }
-            // 변경: 전체 뷰를 렌더링하지 않고, To-Do와 업데이트만 렌더링
             renderTodos();
             renderRecentUpdates();
             autoSave();
