@@ -840,10 +840,6 @@
             <div class="nav-icon">📑</div>
             <div class="nav-text">전체 프로젝트</div>
         </div>
-        <div class="nav-item" onclick="showView('edit')">
-            <div class="nav-icon">✏️</div>
-            <div class="nav-text">편집</div>
-        </div>
     </div>
 
     <!-- 메인 콘텐츠 -->
@@ -896,24 +892,6 @@
         </div>
 
         <div id="table-view" class="view">
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>프로젝트명</th>
-                            <th>상태</th>
-                            <th>진행률</th>
-                            <th>착수일</th>
-                            <th>마감일</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 편집 뷰 -->
-        <div id="edit-view" class="view">
             <div class="edit-controls">
                 <button class="btn" onclick="showAddModal()">➕ 프로젝트 추가</button>
                 <button class="btn" onclick="clearAll()">🗑️ 전체 삭제</button>
@@ -921,21 +899,20 @@
                 <button class="btn" onclick="exportData()">📤 내보내기</button>
                 <button class="btn" onclick="importData()">📥 가져오기</button>
             </div>
-            
             <div class="board">
                 <div class="column">
                     <div class="column-header">🏃‍♂️ 대기 중</div>
-                    <div id="not-started"></div>
+                    <div id="not-started-table"></div>
                     <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
                 </div>
                 <div class="column">
                     <div class="column-header">⚡ 달리는 중</div>
-                    <div id="in-progress"></div>
+                    <div id="in-progress-table"></div>
                     <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
                 </div>
                 <div class="column">
                     <div class="column-header">🏆 완료</div>
-                    <div id="done"></div>
+                    <div id="done-table"></div>
                     <div class="add-card" onclick="showAddModal()">+ 새 프로젝트</div>
                 </div>
             </div>
@@ -1371,20 +1348,19 @@
                 renderAllViews();
                 return;
             }
-
             try {
                 updateFirebaseStatus('loading');
-                
                 const querySnapshot = await db.collection('projects').get();
                 const firebaseProjects = [];
-                
                 querySnapshot.forEach((doc) => {
-                    firebaseProjects.push({ ...doc.data(), firebaseId: doc.id });
+                    const data = doc.data();
+                    if (data && typeof data === 'object') {
+                        firebaseProjects.push({ ...data, firebaseId: doc.id });
+                    }
                 });
-
                 if (firebaseProjects.length > 0) {
                     projects = firebaseProjects;
-                    nextId = Math.max(...projects.map(p => p.id || 0), 0) + 1;
+                    nextId = Math.max(...projects.map(p => p && p.id ? p.id : 0), 0) + 1;
                     console.log(`✅ Firebase에서 ${projects.length}개 프로젝트 로드`);
                     updateFirebaseStatus('connected');
                     showNotification(`📥 ${projects.length}개 프로젝트 로드됨`);
@@ -1392,7 +1368,6 @@
                     console.log('Firebase에 데이터 없음 - 기본 데이터로 초기화');
                     await saveToFirebase();
                 }
-                
                 renderAllViews();
             } catch (error) {
                 console.error('❌ Firebase 로드 실패:', error);
@@ -1497,10 +1472,10 @@ function renderRecentUpdates() {
         const li = document.createElement('li');
         li.style.cssText = 'margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;';
         const messageSpan = document.createElement('span');
-        messageSpan.style.cssText = 'font-size:13px;color:#1e293b;';
+        messageSpan.style.cssText = 'font-size:13px;color:#1e293b;flex:1;';
         messageSpan.textContent = update.message;
         const timeSpan = document.createElement('span');
-        timeSpan.style.cssText = 'font-size:11px;color:#64748b;margin-left:8px;';
+        timeSpan.style.cssText = 'font-size:11px;color:#64748b;margin-left:8px;min-width:120px;text-align:right;flex-shrink:0;';
         timeSpan.textContent = `(${update.date})`;
         const delBtn = document.createElement('button');
         delBtn.textContent = '✕';
@@ -1714,38 +1689,62 @@ function showView(viewName) {
         }
 
         function renderTable() {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            const allProjects = [...projects].sort((a, b) => {
-                return new Date(a.dueDate) - new Date(b.dueDate);
-            });
-
-            allProjects.forEach(project => {
-                const row = document.createElement('tr');
-                row.style.cursor = 'pointer';
-                row.innerHTML = `
-                    <td><strong>${getPriorityBadge(project.priority)}${project.title}</strong></td>
-                    <td><span class="status ${project.status}">${getStatusText(project.status)}</span></td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="progress-track" style="flex: 1; height: 6px;">
-                                <div class="progress-fill" style="width: ${project.progress}%"></div>
-                            </div>
-                            <strong>${project.progress}%</strong>
-                        </div>
-                    </td>
-                    <td>${project.startDate || '미정'}</td>
-                    <td>${project.dueDate}</td>
+            // Use card layout for all projects, grouped by status
+            const notStarted = document.getElementById('not-started-table');
+            const inProgress = document.getElementById('in-progress-table');
+            const done = document.getElementById('done-table');
+            if (!notStarted || !inProgress || !done) return;
+            notStarted.innerHTML = '';
+            inProgress.innerHTML = '';
+            done.innerHTML = '';
+            const statusMap = {
+                'not-started': notStarted,
+                'in-progress': inProgress,
+                'done': done
+            };
+            projects.forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.cursor = 'pointer';
+                card.innerHTML = `
+                    <div class="card-title">${getPriorityBadge(project.priority)}${project.title}</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 12px; color: #64748b;">
+                        <span>🚀 ${project.startDate || '미정'}</span>
+                        <span>📅 ${project.dueDate}</span>
+                    </div>
+                    <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom:  10px;">
+                        진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: ${project.progress}%"></div>
+                    </div>
+                    <div class="button-container" style="display: flex; gap: 8px; margin-top: 15px;"></div>
                 `;
-                
-                row.onclick = function() { showProjectInfoModal(project.id); };
-                tbody.appendChild(row);
+                // Add edit/delete buttons
+                const buttonContainer = card.querySelector('.button-container');
+                const editBtn = document.createElement('button');
+                editBtn.textContent = '✏️ 편집';
+                editBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                editBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showDetailModal(project.id);
+                });
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️ 삭제';
+                deleteBtn.style.cssText = 'flex: 1; padding: 8px; border: none; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteProject(project.id);
+                });
+                buttonContainer.appendChild(editBtn);
+                buttonContainer.appendChild(deleteBtn);
+                // Card click opens detail modal (edit)
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') return;
+                    showDetailModal(project.id);
+                });
+                statusMap[project.status]?.appendChild(card);
             });
-
-            if (allProjects.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">프로젝트가 없습니다!</td></tr>';
-            }
         }
 
         function renderTimeline() {
@@ -1919,7 +1918,7 @@ function showView(viewName) {
                             <span>🚀 ${project.startDate || '미정'}</span>
                             <span>📅 ${project.dueDate}</span>
                         </div>
-                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px;">
+                        <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom:  10px;">
                             진행률: ${project.progress}% (${project.tasks.filter(t => t.completed).length}/${project.tasks.length} 태스크)
                         </div>
                         <div class="checkboxes">${checkboxes}</div>
@@ -2400,7 +2399,6 @@ function showView(viewName) {
             renderTodo();
             renderTimeline();
             renderTable();
-            renderEdit();
         }
 
         function clearAll() {
